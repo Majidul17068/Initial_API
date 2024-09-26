@@ -1,4 +1,5 @@
 import azure.cognitiveservices.speech as speechsdk
+from azure.cognitiveservices.speech import PropertyId
 import streamlit as st
 from services.groq_service import GroqService
 import os
@@ -88,6 +89,8 @@ class SpeechService:
         """Sets the dynamic timeouts for the speech recognizer."""
         self.speech_config.set_property(speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs, str(segment_timeout))
         self.speech_config.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(initial_timeout))
+        self.speech_config.set_property(PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "50000")
+
     def recognized_handler(self, evt):
         """Handler to process recognized speech and display it."""
         recognized_text = evt.result.text.strip().lower()
