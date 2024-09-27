@@ -38,7 +38,7 @@ class GroqService:
                     {
                         "role": "system",
                         "content": (
-                        "You are an expert language model that checks, corrects, and converts user sentences for grammatical errors and tense. "
+                        "You are an expert language model that checks, corrects grammatical errors and converts the sentences to past tense. "
                         "Follow these steps:\n\n"
                         "1. **Analyze the Sentence**: Carefully read the user response and identify any grammatical errors.\n"
                         "2. **Correct Errors**: Fix any grammatical issues such as verb agreement, spelling, or punctuation.\n"
@@ -65,11 +65,9 @@ class GroqService:
                 model="llama3-8b-8192"
             )
  
-            # Extract and return the corrected response
             corrected_response = response.choices[0].message.content.strip()
             print('corrected_response',corrected_response)
  
-            # If no changes were made, return the original response
             if corrected_response == user_response:
                 return user_response
  

@@ -112,7 +112,7 @@ class SpeechService:
            st.info("Speech recognition started.")
        except Exception as e:
            st.error(f"Error starting continuous recognition: {e}")
-
+           
    def stop_speech_recognition(self):
         """Stop continuous speech recognition and return recognized text."""
         try:
@@ -123,7 +123,6 @@ class SpeechService:
         except Exception as e:
             st.error(f"Error stopping speech recognition: {e}")
             return None
-        
    def synthesize_speech(self, text: str):
        cleaned_text = self.clean_text(text)
       
