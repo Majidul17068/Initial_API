@@ -6,9 +6,9 @@ import threading
 from models.conversation import Conversation
 from services.speech_service import SpeechService
 from services.groq_service import GroqService
-from datetime import datetime, timezone
+from datetime import datetime
 from services.question_data import incident_questions, accident_questions
-from services.speech_service import add_custom_css, display_chat_message
+from services.speech_service import display_chat_message
 class ConversationManager:
     def __init__(self):
         self.conversations = {}
@@ -26,7 +26,6 @@ class ConversationManager:
         if not first:
             conversation.current_question_index += 1
         if conversation.current_question_index >= len(conversation.questions):
-            # End of questions - proceed to summarization and confirmation steps
             self.speech_service.synthesize_speech("Thank you for filling up the form, here is a summary of the event...")
             summary = self.groq_service.summarize_scenario(conversation.responses, conversation.scenario_type)
             
@@ -39,10 +38,9 @@ class ConversationManager:
             self.speech_service.synthesize_speech(current_question)
             # Retry mechanism for capturing valid input
             for attempt in range(3):
-                user_response = self.capture_user_response(60) 
+                user_response = self.capture_user_response(60, skip_grammar_check=False)
                 
                 if user_response:
-                    # Validate response for specific questions
                     if self.needs_validation(current_question):
                         if self.validate_response(current_question, user_response):
                             conversation.responses[current_question] = user_response
@@ -79,17 +77,17 @@ class ConversationManager:
         
         return True
     
-    def capture_user_response(self, duration_seconds: int):
-        """Helper function to capture user response with specified timeout."""
+    def capture_user_response(self, duration_seconds: int, skip_grammar_check=False):
+        """Helper function to capture user response with specified timeout and perform grammar check if needed."""
 
         stop_event = threading.Event()
     
         self.speech_service.recognized_text = ""
     
-        # Calculate and set dynamic timeouts before starting recognition
         segment_timeout = duration_seconds * 2000  
         initial_timeout = (duration_seconds + 5) * 1000 
         self.speech_service.set_dynamic_timeouts(segment_timeout, initial_timeout)
+        
         # Define an event handler for recognition
         def on_recognized(evt):
             if evt.result.text:
@@ -106,7 +104,17 @@ class ConversationManager:
     
         self.speech_service.speech_recognizer.recognized.disconnect_all()
     
-        return self.speech_service.recognized_text
+        # Perform grammar check on the recognized text if needed
+        if self.speech_service.recognized_text:
+            if skip_grammar_check:
+                display_chat_message(is_user=True, message_text=self.speech_service.recognized_text)
+                return self.speech_service.recognized_text
+            else:
+                corrected_text = self.groq_service.check_grammar(self.speech_service.recognized_text)
+                display_chat_message(is_user=True, message_text=corrected_text)
+                return corrected_text
+        else:
+            return ""
     
             
     def save_conversation_to_json(self, conversation_id):
@@ -118,7 +126,7 @@ class ConversationManager:
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         filename = f"conversation_{conversation_id}_{timestamp}.json"
         filepath = os.path.join("conversations", filename)
-        # Ensure the conversations directory exists
+        
         os.makedirs("conversations", exist_ok=True)
         # Structure the data to be saved
         data = {
@@ -142,7 +150,7 @@ class ConversationManager:
     def _ask_scenario_type(self, conversation_id):
         """Asks the user whether the report is for an accident or an incident."""
         self.speech_service.synthesize_speech("Did the event result in any physical injury or harm to a person. (even if minor, like a scratch)?")
-        user_response = self.capture_user_response(15) 
+        user_response = self.capture_user_response(15, skip_grammar_check=True) 
         if "no" in user_response.lower():
             self._initialize_conversation(conversation_id, "incident", incident_questions)
         elif "yes" in user_response.lower():
