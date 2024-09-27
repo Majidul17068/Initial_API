@@ -1,6 +1,6 @@
 project/ <br>
 ├── app.py                        # FastAPI app entry point<br>
-├── main.py                       # Command-line entry point for testing<br>
+├── main.py                       # Stremlit entry point for testing<br>
 ├── services/<br>
 │   ├── conversation_manager.py    # Manages the flow of conversations<br>
 │   ├── speech_service.py          # Handles Azure speech-to-text and text-to-speech interactions<br>
@@ -13,15 +13,13 @@ project/ <br>
 ├── requirements.txt               # Project dependencies<br>
 └── README.md                      # Project instructions and documentation<br>
 
-Features of Prototype :<br>
-
-Here 
+Features of this Prototype :<br>
+This is a Initial response agent to report for accident/incident in Care Home<br>
 
 i. Grammartical correction for users response<br>
-ii. Relevancy check feture removed<br>
+ii. Predefine standard Question will be asked<br>
 iii. Summarization based on incident/accident sceneio<br>
-iv. Multistep validation for informing home manager/update risk assessments(Prototype done- not done in real time)<br>
-v. Preventive step generation is integrated<br>
+
 
 Core Components<br>
 1. app.py (FastAPI Setup)<br>
@@ -76,6 +74,7 @@ Stores predefined questions for accidents and incidents, which are used by the C
 To Run this program.<br>
 Commands<br>
 pipenv install<br>
-pipenv shell<br>
-pipenv install -r requirements.txt <br>
-python main.py<br>
+pipenv shell(make sure pipenv is active)<br>
+pipenv run pip install -r requirements.txt <br>
+**configure your .env file** <br>
+streamlit run main.py <br>

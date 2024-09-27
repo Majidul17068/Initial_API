@@ -1,4 +1,5 @@
 import azure.cognitiveservices.speech as speechsdk
+from azure.cognitiveservices.speech import PropertyId
 import streamlit as st
 from services.groq_service import GroqService
 import os
