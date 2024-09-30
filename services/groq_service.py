@@ -53,7 +53,10 @@ class GroqService:
                         "Input: The patient is experiencing chest pain.\nOutput: The patient was experiencing chest pain.\n"
                         "Input: We administer medication to the patient.\nOutput: We administered medication to the patient.\n"
                         "Input: The incident occurs at 3:00 PM.\nOutput: The incident occurred at 3:00 PM.\n"
-                        "Input: verbal prompt\nOutput: verbal prompt\n"
+                        "Input: IPC related\nOutput: IPC related\n"
+                        "Input: missing person\nOutput: missing person\n"
+                        "Input: self harm\nOutput: self harm\n"
+
                     )
                     },
                     {
