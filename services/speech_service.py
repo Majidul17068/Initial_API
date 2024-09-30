@@ -1,11 +1,10 @@
-import threading
-import time
 import azure.cognitiveservices.speech as speechsdk
+import time
 import os
-import streamlit as st
 import re
-from services.groq_service import GroqService
+import threading
 from services.ui_helpers import display_chat_message
+import streamlit as st
 
 class SpeechService:
     def __init__(self):
@@ -13,100 +12,99 @@ class SpeechService:
             subscription=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION")
         )
-        # Audio config for recognizer (microphone input)
         self.audio_config_recognizer = speechsdk.audio.AudioConfig(use_default_microphone=True)
-        # Audio config for synthesizer (default speaker output)
         self.audio_config_synthesizer = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
         self.speech_config.speech_synthesis_voice_name = "en-GB-BellaNeural"
-        self.speech_synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self.speech_config,
-            audio_config=self.audio_config_synthesizer
-        )
+        
         self.speech_recognizer = speechsdk.SpeechRecognizer(
             speech_config=self.speech_config,
             audio_config=self.audio_config_recognizer
         )
-        self.groq_service = GroqService()
-        self.recognized_text = ""
+        self.speech_synthesizer = speechsdk.SpeechSynthesizer(
+            speech_config=self.speech_config,
+            audio_config=self.audio_config_synthesizer
+        )
+        
+        self.recognized_text = []
         self.status_message = ""
-        self.lock = threading.Lock()  # To protect shared resources
+        self.lock = threading.Lock()
+        self.last_recognition_time = time.time()
 
         # Event handlers for continuous recognition
-        self.speech_recognizer.recognized.connect(self.recognized_handler)
+        self.speech_recognizer.recognizing.connect(self.recognizing_callback)
+        self.speech_recognizer.recognized.connect(self.recognized_callback)
         self.speech_recognizer.session_started.connect(self.session_started_handler)
         self.speech_recognizer.session_stopped.connect(self.session_stopped_handler)
         self.speech_recognizer.canceled.connect(self.canceled_handler)
 
-    def set_dynamic_timeouts(self, segment_timeout: int, initial_timeout: int):
-        """Sets the dynamic timeouts for the speech recognizer."""
-        self.speech_config.set_property(
-            speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs, str(segment_timeout))
-        self.speech_config.set_property(
-            speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(initial_timeout))
+    def recognizing_callback(self, evt):
+        self.last_recognition_time = time.time()
 
-    def recognized_handler(self, evt):
-        """Handler to process recognized speech."""
-        recognized_text = evt.result.text.strip()
-        if recognized_text:
+    def recognized_callback(self, evt):
+        if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
             with self.lock:
-                self.recognized_text = recognized_text
+                self.recognized_text.append(evt.result.text)
+            self.last_recognition_time = time.time()
+        elif evt.result.reason == speechsdk.ResultReason.NoMatch:
+            print("No speech recognized.")
 
     def session_started_handler(self, evt):
-        """Handler for session started events."""
         with self.lock:
             self.status_message = "Speech recognition started."
 
     def session_stopped_handler(self, evt):
-        """Handler for session stopped events."""
         with self.lock:
             self.status_message = "Speech recognition stopped."
 
     def canceled_handler(self, evt):
-        """Handler to process canceled recognition events."""
         with self.lock:
             self.status_message = f"Speech recognition canceled: {evt.result.reason}"
-        self.stop_speech_recognition()
+        print(self.status_message)
 
-    def start_continuous_recognition(self):
-        """Start continuous speech recognition."""
-        try:
-            with self.lock:
-                self.recognized_text = ""
-                self.status_message = ""
-            self.speech_recognizer.start_continuous_recognition()
-            st.info("Speech recognition started.")
-        except Exception as e:
-            with self.lock:
-                self.status_message = f"Error starting continuous recognition: {e}"
+    def start_continuous_recognition(self, duration=120, silence_threshold=2):
+        st.info("Speech recognition started. Please speak now.")
+        with self.lock:
+            self.recognized_text = []
+            self.status_message = ""
+        
+        self.last_recognition_time = time.time()
+        self.speech_recognizer.start_continuous_recognition()
+
+        start_time = time.time()
+        while time.time() - start_time < duration:
+            time.sleep(0.1)
+            if self.recognized_text and time.time() - self.last_recognition_time > silence_threshold:
+                print(f"Silence detected for {silence_threshold} seconds. Stopping recognition.")
+                break
+
+        self.stop_speech_recognition()
+        
+        full_text = ' '.join(self.recognized_text)
+        return full_text
 
     def stop_speech_recognition(self):
-        """Stop continuous speech recognition."""
         try:
             self.speech_recognizer.stop_continuous_recognition()
             st.info("Speech recognition stopped.")
         except Exception as e:
             with self.lock:
                 self.status_message = f"Error stopping speech recognition: {e}"
+            print(self.status_message)
 
     def synthesize_speech(self, text: str):
         cleaned_text = self.clean_text(text)
-        
-        # Display the text immediately
         display_chat_message(is_user=False, message_text=cleaned_text)
         
-        # Event to signal when speech synthesis is complete
         synthesis_complete = threading.Event()
         
-        # Start speech synthesis in a separate thread
         synthesis_thread = threading.Thread(
             target=self._synthesize_speech_thread, 
             args=(cleaned_text, synthesis_complete)
         )
         synthesis_thread.start()
         
-        # Wait for speech synthesis to complete without blocking the main thread
         while not synthesis_complete.is_set():
-            time.sleep(0.1)  # Sleep briefly to yield control to Streamlit
+            time.sleep(0.1)
         
         return True
 
@@ -117,17 +115,18 @@ class SpeechService:
                 cancellation_details = result.cancellation_details
                 with self.lock:
                     self.status_message = f"Speech synthesis canceled: {cancellation_details.reason}"
+                print(self.status_message)
             elif result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
                 with self.lock:
                     self.status_message = f"Speech synthesis failed with reason: {result.reason}"
+                print(self.status_message)
         except Exception as e:
             with self.lock:
                 self.status_message = f"Speech synthesis exception: {e}"
+            print(self.status_message)
         finally:
-            # Signal that synthesis is complete
             synthesis_complete.set()
 
     @staticmethod
     def clean_text(text: str):
-        """Remove special characters from text."""
         return ''.join(char for char in text if re.match(r'[\w\s\.,!?\'":;()-]', char))

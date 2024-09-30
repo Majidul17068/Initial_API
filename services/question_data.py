@@ -12,7 +12,7 @@ incident_questions=[
     - Near miss\n
     - Missing person\n
     - Others""",
-   "Please provide the name of the staff member who has any information regarding the incident",
+   "Please provide the name of the staff member who has any information regarding the incident.",
    "Where did the event take place?",
    "Were there any witnesses?",
    "Please provide details of the event",
@@ -33,7 +33,7 @@ accident_questions = [
     - Near miss\n
     - Missing person\n
     - Others""",
-   "Please provide the name of the staff member who has any information regarding the incident",
+   "Please provide the name of the staff member who has any information regarding the incident.",
    "Where did the event take place?",
    "Were there any witnesses?",
    "Please provide details of the event",
