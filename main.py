@@ -4,7 +4,7 @@ from services.ui_helpers import add_custom_css
 
 def start_conversation():
     conversation_manager = ConversationManager()
-    conversation_id = conversation_manager.create_new_conversation
+    conversation_id = conversation_manager.create_new_conversation()
     conversation_manager.start_conversation(conversation_id)
     st.session_state['conversation_manager'] = conversation_manager
     st.session_state['conversation_id'] = conversation_id

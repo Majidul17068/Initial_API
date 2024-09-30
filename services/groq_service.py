@@ -8,25 +8,41 @@ class GroqService:
 
     def summarize_scenario(self, responses: dict, scenario_type: str) -> str:
         try:
-            combined_description = f"This is a report about a {scenario_type}."
+            # Combine the provided Q&A responses into a description
+            combined_description = f"This is a report about a {scenario_type}.\n"
             for i, (question, answer) in enumerate(responses.items(), start=1):
                 combined_description += f"{i}. {question}: {answer}\n"
-            
+
             response = self.client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": "You are a report writing expert. "
-                                                  "You always generate the report as a paragraph based on question and answer scenario"
-                                                  "You should generate report as a storyline"
-                                                  "You should generate key findings"
-                                                  "You should bold the key words and lines in the report."},
-                    {"role": "user", "content": f"Summarization of the  the following incident or accident: {combined_description}"}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a report writing expert. "
+                            "You will always generate the report based strictly on the context provided by the user in a question-and-answer format. "
+                            "The report must be descriptive and structured as follows:\n"
+                            "1. **Title of the Incident**: Provide a clear, concise title derived from the incident details.\n"
+                            "2. **Descriptive Summary**: Craft a detailed paragraph explaining the incident in a narrative form. Ensure the description is vivid and context-specific, including details such as time, location, people involved, and actions taken. Provide a coherent flow that tells the story of what happened step by step.\n"
+                            "3. **Key Findings**: Summarize the main facts, extracted directly from the user's input, with key elements such as location, actions, and individuals involved. Bold important facts and findings.\n"
+                            "4. **Recommendations**: Provide actionable recommendations directly related to the key findings. Base these recommendations on the context provided. Bold any significant recommendations.\n"
+                            "5. **Action Taken**: Describe any actions taken based on the user's input. Highlight any immediate responses or follow-up actions. Bold key actions.\n"
+                            "Ensure that no information is added or inferred that is not explicitly stated in the user's input. The narrative and recommendations should be strictly context-based, and all relevant words, findings, and actions should be bolded for emphasis."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Summarization of the following incident or accident:\n{combined_description}"
+                    }
                 ],
-                model="llama3-8b-8192"
+                model="llama-3.1-70b-versatile"
             )
+
             return response.choices[0].message.content.strip()
+
         except Exception as e:
             print(f"Error summarizing scenario: {e}")
             return "An error occurred during scenario summarization."
+
         
     def check_grammar(self, user_response: str) -> str:
         try:
@@ -46,7 +62,7 @@ class GroqService:
                         "4. **Preserve Meaning**: Ensure the original meaning of the sentence is maintained.\n"
                         "5. **Generate the Response**: Output only the corrected and past tense version of the sentence.\n"
                         "**Important Notes:**\n"
-                        "- Do not provide explanations or additional comments.\n"
+                        "- Do not provide explanations or additional comments. just provide the context.\n"
                         "- Always convert to past tense, unless dealing with dates, times, or days.\n"
                         "- For single-word responses or short phrases, return them as-is.\n"
                         "Examples:\n"
@@ -56,7 +72,7 @@ class GroqService:
                         "Input: IPC related\nOutput: IPC related\n"
                         "Input: missing person\nOutput: missing person\n"
                         "Input: self harm\nOutput: self harm\n"
-
+                        "Input: physical assault\nOutput: physical assault\n"
                     )
                     },
                     {
