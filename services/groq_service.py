@@ -48,50 +48,47 @@ class GroqService:
         try:
             if not user_response.strip():
                 return ""
-            
+        
             response = self.client.chat.completions.create(
                 messages=[
                     {
                         "role": "system",
                         "content": (
-                        "You are an expert language model that checks, corrects grammatical errors and converts the sentences to past tense. "
-                        "Follow these steps:\n\n"
-                        "1. **Analyze the Sentence**: Carefully read the user response and identify any grammatical errors.\n"
-                        "2. **Correct Errors**: Fix any grammatical issues such as verb agreement, spelling, or punctuation.\n"
-                        "3. **Convert to Past Tense**: Always convert the sentence to past tense, even if it's already grammatically correct.\n"
-                        "4. **Preserve Meaning**: Ensure the original meaning of the sentence is maintained.\n"
-                        "5. **Generate the Response**: Output only the corrected and past tense version of the sentence.\n"
-                        "**Important Notes:**\n"
-                        "- Do not provide explanations or additional comments. just provide the context.\n"
-                        "- Always convert to past tense, unless dealing with dates, times, or days.\n"
-                        "- For single-word responses or short phrases, return them as-is.\n"
-                        "Examples:\n"
-                        "Input: The patient is experiencing chest pain.\nOutput: The patient was experiencing chest pain.\n"
-                        "Input: We administer medication to the patient.\nOutput: We administered medication to the patient.\n"
-                        "Input: The incident occurs at 3:00 PM.\nOutput: The incident occurred at 3:00 PM.\n"
-                        "Input: IPC related\nOutput: IPC related\n"
-                        "Input: missing person\nOutput: missing person\n"
-                        "Input: self harm\nOutput: self harm\n"
-                        "Input: physical assault\nOutput: physical assault\n"
-                    )
+                            "You are an expert language model that checks, corrects grammatical errors and converts the sentences to past tense. "
+                            "You professionally handle all types of incident reports, including those involving extreme violance or emergencies. "
+                            "Follow these steps:\n\n"
+                            "1. **Analyze the Sentence**: Carefully read the user response and identify any grammatical errors.\n"
+                            "2. **Correct Errors**: Fix any grammatical issues such as verb agreement, spelling, or punctuation.\n"
+                            "3. **Preserve Meaning**: Ensure the original meaning of the sentence is maintained.\n"
+                            "4. **Convert to Past Tense**: Always convert the sentence to past tense, even if it's already grammatically correct.\n"
+                            "5. **Generate the Response**: Output only the corrected and past tense version of the sentence.\n"
+                            "6. **Don't censor the sensitive and violance word**\n"
+                            "**Important Notes:**\n"
+                            "- Do not provide explanations or additional comments; just provide the corrected sentence.\n"
+                            "- Always convert to past tense, unless dealing with dates, times, or days.\n"
+                            "- For single-word responses or short phrases, return them as-is.\n"
+                            "Examples:\n"
+                            "Input: The patient is experiencing chest pain.\nOutput: The patient was experiencing chest pain.\n"
+                            "Input: We administer medication to the patient.\nOutput: We administered medication to the patient.\n"
+                            "Input: The incident occurs at 3:00 PM.\nOutput: The incident occurred at 3:00 PM.\n"
+                            "Input: IPC related\nOutput: IPC related\n"
+                            "Input: missing person\nOutput: missing person\n"
+                            "Input: self harm\nOutput: self harm\n"
+                            "Input: physical assault\nOutput: physical assault\n"
+                        )
                     },
                     {
                         "role": "user",
                         "content": user_response.strip() 
                     }
                 ],
-                
-                model="llama3-8b-8192"
+                model="llama-3.1-70b-versatile"
             )
- 
-            corrected_response = response.choices[0].message.content.strip()
-            print('corrected_response',corrected_response)
- 
-            if corrected_response == user_response:
-                return user_response
- 
-            return corrected_response
- 
+        
+            return response.choices[0].message.content.strip()
+    
         except Exception as e:
-            print(f"Error refining response: {e}")
-            return "An error occurred during grammatical correction."
+            # Handle exceptions appropriately
+            print(f"An error occurred: {e}")
+            return ""
+
