@@ -26,6 +26,7 @@ class GroqService:
                             "3. **Key Findings**: Summarize the main facts, extracted directly from the user's input, with key elements such as location, actions, and individuals involved. Bold important facts and findings.\n"
                             "4. **Recommendations**: Provide actionable recommendations directly related to the key findings. Base these recommendations on the context provided. Bold any significant recommendations.\n"
                             "5. **Action Taken**: Describe any actions taken based on the user's input. Highlight any immediate responses or follow-up actions. Bold key actions.\n"
+                            "6. **Don't censor the sensitive and violance word**\n"
                             "Ensure that no information is added or inferred that is not explicitly stated in the user's input. The narrative and recommendations should be strictly context-based, and all relevant words, findings, and actions should be bolded for emphasis."
                         )
                     },
@@ -82,6 +83,7 @@ class GroqService:
                         "content": user_response.strip() 
                     }
                 ],
+                
                 model="llama-3.1-70b-versatile"
             )
         
