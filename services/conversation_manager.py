@@ -85,7 +85,7 @@ class ConversationManager:
                 "fall", "behaviour", "medication", "skin integrity",
                 "environmental", "absconding", "physical assault",
                 "self harm", "ipc related", "near miss",
-                "missing person", "others"
+                "missing person", "others", "other"
             ]
             return any(option in response.lower() for option in valid_options)
         return True
