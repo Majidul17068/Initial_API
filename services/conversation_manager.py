@@ -1,7 +1,6 @@
 # services/conversation_manager.py
 
 import uuid
-import os
 from datetime import datetime
 from models.conversation import Conversation
 from services.speech_service import SpeechService
@@ -26,7 +25,8 @@ class ConversationManager:
     def start_conversation(self, conversation_id):
         """Initializes the conversation and determines the type."""
         conversation = self.conversations.get(conversation_id)
-        welcome_prompt = "Welcome to the Care Home Incident and Accident Reporting System."
+        welcome_prompt = f"Hi {conversation.reporting_person}, Welcome to the Care Home Incident and Accident Reporting System."
+
         conversation.messages.append({
             "sender": "system",
             "text": welcome_prompt,
@@ -35,7 +35,8 @@ class ConversationManager:
         })
         self.speech_service.synthesize_speech(welcome_prompt)
 
-        sad_welcome = f"I'm sorry to hear that there's been an incident involving {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
+        sad_welcome = f"I'm sorry to hear that there's been an event involving resident name {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
+
         conversation.messages.append({
             "sender": "system",
             "text": sad_welcome,
@@ -43,7 +44,6 @@ class ConversationManager:
             "message_type": "system_message"
         })
         self.speech_service.synthesize_speech(sad_welcome)
-
         self._ask_scenario_type(conversation_id)
 
     def _ask_scenario_type(self, conversation_id):
@@ -178,7 +178,7 @@ class ConversationManager:
         """Validates the response for specific questions."""
         if "Can you tell me the type of event from the following options?" in question:
             valid_options = [
-                "fall", "behaviour", "medication", "skin integrity",
+                "fall", "behaviour", "behavior", "medication", "skin integrity",
                 "environmental", "absconding", "physical assault",
                 "self harm", "ipc related", "near miss",
                 "missing person", "others", "other"

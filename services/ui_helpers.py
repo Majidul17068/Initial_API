@@ -53,3 +53,4 @@ def display_chat_message(is_user, message_text):
             <div class="message-text">{message_text}</div>
         </div>
         """, unsafe_allow_html=True)
+

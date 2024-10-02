@@ -80,6 +80,7 @@ class SpeechService:
         self.stop_speech_recognition()
         
         full_text = ' '.join(self.recognized_text)
+        print(full_text)
         return full_text
 
     def stop_speech_recognition(self):
@@ -129,4 +130,4 @@ class SpeechService:
 
     @staticmethod
     def clean_text(text: str):
-        return ''.join(char for char in text if re.match(r'[\w\s\.,!?\'":;()-]', char))
+        return ''.join(char for char in text if re.match(r'[\w\s\.,!?\'":;()<>\-]', char))
