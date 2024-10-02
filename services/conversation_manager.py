@@ -1,5 +1,4 @@
-# services/conversation_manager.py
-
+import streamlit as st
 import uuid
 from datetime import datetime
 from models.conversation import Conversation
@@ -204,21 +203,24 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
-        conversation.messages.append({
-            "sender": "system",
-            "text": summary_prompt,
-            "timestamp": datetime.utcnow(),
-            "message_type": "system_message"
-        })
-        self.speech_service.synthesize_speech(summary_prompt)
-
         summary = self.groq_service.summarize_scenario(conversation.responses, conversation.scenario_type)
+    
+        # Show a dynamic processing icon while summarizing
+        with st.spinner("Processing the event summary..."):
+            summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+            conversation.messages.append({
+                "sender": "system",
+                "text": summary_prompt,
+                "timestamp": datetime.utcnow(),
+                "message_type": "system_message"
+            })
+            self.speech_service.synthesize_speech(summary_prompt)
 
-        display_chat_message(is_user=False, message_text=f"{summary}")
+            display_chat_message(is_user=False, message_text=f"{summary}")
 
-        conversation.scenario_summary = summary
-        conversation.updated_at = datetime.utcnow()
+            conversation.scenario_summary = summary
+            conversation.updated_at = datetime.utcnow()
+
         self.save_conversation_to_db(conversation_id)
 
     def save_conversation_to_db(self, conversation_id):
