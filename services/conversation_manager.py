@@ -1,7 +1,5 @@
-# services/conversation_manager.py
-
+import streamlit as st
 import uuid
-import os
 from datetime import datetime
 from models.conversation import Conversation
 from services.speech_service import SpeechService
@@ -26,7 +24,8 @@ class ConversationManager:
     def start_conversation(self, conversation_id):
         """Initializes the conversation and determines the type."""
         conversation = self.conversations.get(conversation_id)
-        welcome_prompt = "Welcome to the Care Home Incident and Accident Reporting System."
+        welcome_prompt = f"Hi {conversation.reporting_person}, Welcome to the Care Home Incident and Accident Reporting System."
+
         conversation.messages.append({
             "sender": "system",
             "text": welcome_prompt,
@@ -35,7 +34,8 @@ class ConversationManager:
         })
         self.speech_service.synthesize_speech(welcome_prompt)
 
-        sad_welcome = f"I'm sorry to hear that there's been an incident involving {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
+        sad_welcome = f"I'm sorry to hear that there's been an event involving resident name {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
+
         conversation.messages.append({
             "sender": "system",
             "text": sad_welcome,
@@ -43,7 +43,6 @@ class ConversationManager:
             "message_type": "system_message"
         })
         self.speech_service.synthesize_speech(sad_welcome)
-
         self._ask_scenario_type(conversation_id)
 
     def _ask_scenario_type(self, conversation_id):
@@ -178,7 +177,7 @@ class ConversationManager:
         """Validates the response for specific questions."""
         if "Can you tell me the type of event from the following options?" in question:
             valid_options = [
-                "fall", "behaviour", "medication", "skin integrity",
+                "fall", "behaviour", "behavior", "medication", "skin integrity",
                 "environmental", "absconding", "physical assault",
                 "self harm", "ipc related", "near miss",
                 "missing person", "others", "other"
@@ -204,21 +203,24 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
-        conversation.messages.append({
-            "sender": "system",
-            "text": summary_prompt,
-            "timestamp": datetime.utcnow(),
-            "message_type": "system_message"
-        })
-        self.speech_service.synthesize_speech(summary_prompt)
-
         summary = self.groq_service.summarize_scenario(conversation.responses, conversation.scenario_type)
+    
+        # Show a dynamic processing icon while summarizing
+        with st.spinner("Processing the event summary..."):
+            summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+            conversation.messages.append({
+                "sender": "system",
+                "text": summary_prompt,
+                "timestamp": datetime.utcnow(),
+                "message_type": "system_message"
+            })
+            self.speech_service.synthesize_speech(summary_prompt)
 
-        display_chat_message(is_user=False, message_text=f"{summary}")
+            display_chat_message(is_user=False, message_text=f"{summary}")
 
-        conversation.scenario_summary = summary
-        conversation.updated_at = datetime.utcnow()
+            conversation.scenario_summary = summary
+            conversation.updated_at = datetime.utcnow()
+
         self.save_conversation_to_db(conversation_id)
 
     def save_conversation_to_db(self, conversation_id):

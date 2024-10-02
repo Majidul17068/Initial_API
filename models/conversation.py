@@ -10,8 +10,8 @@ class Conversation:
         self.scenario_summary = None
         self.messages = []
         self.resident_id = "Res_01"         
-        self.resident_name = "John Doe"        
+        self.resident_name = "Johny Bravo"        
         self.reporting_person_id = "Agent_01"  
-        self.reporting_person = "Simarjet Kaur"     
+        self.reporting_person = "Esteban"     
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
