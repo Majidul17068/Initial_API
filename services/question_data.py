@@ -63,5 +63,6 @@ accident_questions = [
     - Police \n
     - GP \n
     - RIDDOR \n
-    - If Other, please specify"""
+    - If Other, please specify""",
+    "Would you like me to notify the manager?"
 ]
