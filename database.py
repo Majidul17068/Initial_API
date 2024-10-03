@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+
 class MongoDBClient:
     def __init__(self):
         self.mongo_uri = os.getenv("MONGODB_URI")
