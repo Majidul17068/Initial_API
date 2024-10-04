@@ -86,7 +86,7 @@ class GroqService:
                             "Input: In the patient's room, on October 2, 2024 at 16134 .\n Output:In the patient's room, on October 2, 2024 at 16:34\n"
                             "Input: missing person\nOutput: missing person\n"
                             "Input: self harm\nOutput: self harm\n"
-                            "Input: physical assault\nOutput: physical assault\n"g
+                            "Input: physical assault\nOutput: physical assault\n"
                             "Input: medication\nOutput: medication\n"
                             "Input: environmental\nOutput: environmental\n"
                             "Input: near miss\nOutput: near miss\n"
