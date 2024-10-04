@@ -31,7 +31,7 @@ incident_questions=[
     - RIDDOR \n
     - Other, please specify
     (e.g: "We informed the social worker named Sajib on 24th October 2024")""",
-    "Would you like me to notify the manager?""
+    "Would you like me to notify the manager?"
    
 ]
 accident_questions = [
