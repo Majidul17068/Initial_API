@@ -30,8 +30,8 @@ incident_questions=[
     - GP \n
     - RIDDOR \n
     - Other, please specify
-    (e.g: "We informed the social worker named Sajib on 24th October 2024")""",
-    "Would you like me to notify the manager?"
+    (e.g: "We informed the social worker named Sajib on 24th October 2024")"""
+    
    
 ]
 accident_questions = [
@@ -67,5 +67,5 @@ accident_questions = [
     - RIDDOR \n
     - If Other, please specify
     (e.g: "We informed the social worker named Sajib on 24th October 2024")""",
-    "Would you like me to notify the manager?"
+    
 ]
