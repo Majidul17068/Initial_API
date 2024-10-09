@@ -61,7 +61,7 @@ class SpeechService:
             self.status_message = f"Speech recognition canceled: {evt.result.reason}"
         print(self.status_message)
 
-    def start_continuous_recognition(self, duration=120, silence_threshold=2):
+    def start_continuous_recognition(self, duration=120, silence_threshold=0.2):
         st.info("Speech recognition started. Please speak now.")
         with self.lock:
             self.recognized_text = []

@@ -5,7 +5,7 @@ class GroqService:
     def __init__(self):
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
  
-    def summarize_scenario(self, responses: dict, scenario_type: str) -> str:
+    def summarize_scenario(self, responses: dict, scenario_type: str, event_type:str) -> str:
         try:
             print(scenario_type)
             # Combine the provided Q&A responses into a description
@@ -24,7 +24,7 @@ class GroqService:
                             f"Analyze the user's responses to identify specific action-related keywords or phrases that describe the nature of the {scenario_type}, including the part of the body involved in any injury. "
                             "Focus on extracting these keywords directly from the user's narrative without inferring, assuming, or adding any information that was not explicitly mentioned by the user.\n"
                             "The report must be descriptive and structured as follows:\n"
-                            f"1. **Title of the {scenario_type}**: Provide a clear, concise title using the exact words provided by the user. Include the part of the body involved if mentioned. Do not add any inferred terms.\n"
+                            f"1. **Title of the {scenario_type}**: {event_type}: Provide a clear, concise title using the exact words provided by the user. Include the part of the body involved if mentioned. Do not add any inferred terms.\n"
                             f"2. **Descriptive Summary**: Craft a detailed paragraph explaining the {scenario_type} in a narrative form using only the user's words. Ensure the description is context-specific, including the time, location, people involved, actions taken, any medical terms (such as BP, pulse, temperature, respiration and other medical related term), and the part of the body involved in the injury, if explicitly stated. **Do not infer any injuries, actions, or other details not explicitly stated by the user**.\n"
                             "3. **Key Findings**: Summarize the main facts using only the user's responses. Extract key elements such as location, actions, individuals involved, medical observations (e.g., BP, pulse, temperature), and the part of the body injured. **Do not add or infer any details**. Bold important facts and findings.\n"
                             "4. **Recommendations**: Provide actionable recommendations based only on the key findings explicitly mentioned in the user's input. **Do not include any recommendations based on inferred or assumed information**.\n"
@@ -92,6 +92,7 @@ class GroqService:
                             "Input: near miss\nOutput: near miss\n"
                             "Input: absconding\nOutput: absconding\n"
                             "Input: skin integrity\nOutput: skin integrity\n"
+                            "Input: was skin integrity\nOutput: skin integrity\n"
                             "Input: fall\nOutput: fall\n"
                             "Input: behaviour\nOutput: behaviour\n"
                         )
@@ -104,7 +105,11 @@ class GroqService:
                 model="llama-3.1-70b-versatile"
             )
    
-            return response.choices[0].message.content.strip()
+            corrected_text= response.choices[0].message.content.strip()
+            if corrected_text == user_response.strip():
+                return user_response.strip()
+            
+            return corrected_text
  
         except Exception as e:
             # Handle exceptions appropriately
