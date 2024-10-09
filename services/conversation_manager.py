@@ -14,7 +14,7 @@ import streamlit as st
 class ConversationManager:
     def __init__(self):
         self.conversations = {}
-        self.speech_service = SpeechService()
+        self.speech_service = SpeechService(self)
         self.groq_service = GroqService()
         self.db_client = MongoDBClient()
 
@@ -26,6 +26,7 @@ class ConversationManager:
 
     def start_conversation(self, conversation_id):
         """Initializes the conversation and determines the scenario type."""
+        self.conversation_id = conversation_id
         conversation = self.conversations.get(conversation_id)
         welcome_prompt = f"Hi {conversation.reporting_person}, Welcome to the Care Home Incident and Accident Reporting System."
         self._add_message(conversation, "system", welcome_prompt, "system_message")
@@ -197,6 +198,21 @@ class ConversationManager:
         if question_id:
             message["question_id"] = question_id
         conversation.messages.append(message)
+        
+    
+    def display_status(self, type, message):
+        # conversation_id =  st.session_state.get('conversation_id')
+        conversation = self.conversations.get(self.conversation_id)
+        self._add_message(conversation, type, message, 'status')
+        if(type == 'info'):
+            st.info(message)
+        elif(type == 'error'):
+            st.error(message)
+        elif(type == 'warning'):
+            st.warning(message)
+        elif(type == 'success'):
+            st.success(message)
+            
 
     def notify_manager(self, conversation_id):
         """Handles notifying the manager based on user response."""

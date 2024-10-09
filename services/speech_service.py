@@ -7,7 +7,7 @@ from services.ui_helpers import display_chat_message
 import streamlit as st
 
 class SpeechService:
-    def __init__(self):
+    def __init__(self, conversation_manager):
         self.speech_config = speechsdk.SpeechConfig(
             subscription=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION")
@@ -36,6 +36,8 @@ class SpeechService:
         self.speech_recognizer.session_started.connect(self.session_started_handler)
         self.speech_recognizer.session_stopped.connect(self.session_stopped_handler)
         self.speech_recognizer.canceled.connect(self.canceled_handler)
+        
+        self.conversation_manager = conversation_manager
 
     def recognizing_callback(self, evt):
         self.last_recognition_time = time.time()
@@ -62,7 +64,9 @@ class SpeechService:
         print(self.status_message)
 
     def start_continuous_recognition(self, duration=120, silence_threshold=0.2):
-        st.info("Speech recognition started. Please speak now.")
+        
+        self.conversation_manager.display_status('info',"Speech recognition started. Please speak now.")
+        # st.info("Speech recognition started. Please speak now.")
         with self.lock:
             self.recognized_text = []
             self.status_message = ""
@@ -86,7 +90,9 @@ class SpeechService:
     def stop_speech_recognition(self):
         try:
             self.speech_recognizer.stop_continuous_recognition()
-            st.info("Speech recognition stopped.")
+            
+            self.conversation_manager.display_status('info',"Speech recognition stopped.")
+            # st.info("Speech recognition stopped.")
         except Exception as e:
             with self.lock:
                 self.status_message = f"Error stopping speech recognition: {e}"

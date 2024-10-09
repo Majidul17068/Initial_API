@@ -31,8 +31,20 @@ def stop_conversation():
 
 def render_previous_conversation(conversation):
     for message in conversation.messages:
-        display_chat_message(is_user=(message["sender"] == "user"), message_text=message["text"])
-
+        if(message['sender'] not in ('user', 'system')):
+            type = message['sender']
+            
+            if(type == 'info'):
+                st.info(message["text"])
+            elif(type == 'error'):
+                st.error(message["text"])
+            elif(type == 'warning'):
+                st.warning(message["text"])
+            elif(type == 'success'):
+                st.success(message["text"])
+        else:
+            display_chat_message(is_user=(message["sender"] == "user"), message_text=message["text"])
+    
 def reinitialize_conversation(conversation):
     conversation_manager = st.session_state.get('conversation_manager')
     conversation_id = st.session_state.get('conversation_id')
@@ -41,23 +53,31 @@ def reinitialize_conversation(conversation):
         staff_name_prompt = "Please provide the name of the staff member who has any information regarding the event."
         conversation_manager._add_message(conversation, "system", staff_name_prompt, "question", "Q2")
         conversation_manager.speech_service.synthesize_speech(staff_name_prompt)
-        
+
         staff_name = conversation_manager.capture_user_response(15, skip_grammar_check=True)
         st.session_state['staff_name'] = staff_name
+        conversation_manager._add_message(conversation, "user", staff_name, "question", "Q2")
+        
         
         spelling_prompt = "If the spelling of the staff name is correct, please say 'yes' or 'no'."
         conversation_manager.speech_service.synthesize_speech(spelling_prompt)
+        conversation_manager._add_message(conversation, "system", staff_name_prompt, "question", "Q2")
+        
         
         spelling_response = conversation_manager.capture_user_response(15, skip_grammar_check=True)
         
         if "yes" in spelling_response.lower():
             st.session_state['name_confirmed'] = True
             conversation_manager._add_message(conversation, "user", staff_name, "question", "Q2")
-            st.success("Name confirmed")
+            conversation_manager.display_status('success', "Name confirmed")
+            # st.success("Name confirmed")
             conversation_manager.proceed_to_next_question(conversation_id)
         else:
             name_input_prompt = "Please enter the correct spelling of the staff name:"
+            userresponse = 'No'
+            conversation_manager._add_message(conversation, "user", userresponse, "question", "Q2")
             conversation_manager.speech_service.synthesize_speech(name_input_prompt)
+            conversation_manager._add_message(conversation, "system", name_input_prompt, "question", "Q2")
             st.text_input(
                 "Please enter the correct spelling of the staff name:",
                 key='staff_name_input',
@@ -71,7 +91,7 @@ def confirm_name(conversation, conversation_manager, conversation_id):
     st.session_state['name_confirmed'] = True
     conversation_manager._add_message(conversation, "user", corrected_name, "answer", "Q2")
     render_previous_conversation(conversation)
-    st.success("Name confirmed")
+    conversation_manager.display_status('success', "Name confirmed")
     conversation_manager.proceed_to_next_question(conversation_id)
 
 def main():
@@ -104,7 +124,8 @@ def main():
                     conversation_manager._add_message(conversation, "user", st.session_state['selected_event_type'], "answer", "Q1")
                     conversation.event_type = st.session_state['selected_event_type']
                     render_previous_conversation(conversation)
-                    st.success("Event type confirmed")
+                    conversation_manager.display_status('success',"Event type confirmed")
+                    # st.success("Event type confirmed")
                     reinitialize_conversation(conversation)
                 return
 
