@@ -7,7 +7,7 @@ incident_questions = [
     "Was there any medical treatment administered?",
     "Would you like to add any vital observations?",
     "Please describe any recovery action taken and by whom?",
-    "Please include a date and name of the person who was informed"
+    "Please include a date and name of the person who was informed (for example: We informed the resident's son, Mark on 24th of October 2024 at 15:35)"
 ]
 
 accident_questions = [
@@ -19,5 +19,5 @@ accident_questions = [
     "Was there any medical treatment administered?",
     "Would you like to add any vital observations?",
     "Please describe any recovery action taken and by whom?",
-    "Please include a date and name of the person who was informed"
+    "Please include a date and name of the person who was informed (for example: We informed the resident's son, Mark on 24th of October 2024 at 15:35)"
 ]
