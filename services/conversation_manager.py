@@ -142,7 +142,7 @@ class ConversationManager:
         return any(keyword in question for keyword in validation_keywords)
 
     def validate_response_name_date(self, question, response):
-        if "Please include a date and name of the person who was informed" in question:
+        if "Please include a date and name of the person who was informed (for example: We informed the resident's son, Mark on 24th of October 2024 at 15:35)" in question:
             name_pattern = r"\b([A-Z][a-z]+ [A-Z][a-z]*|[A-Z][a-z]+)\b"
             date_pattern = r"\b(?:\d{1,2}(?:st|nd|rd|th)?)\s?(?:of\s)?(?:January|February|March|April|May|June|July|August|September|October|November|December),?\s\d{4}\b"
             time_pattern = r"\b\d{1,2}(:\d{2})?\s?(am|pm|AM|PM)?\b|\b\d{2}:\d{2}\b"
@@ -151,7 +151,7 @@ class ConversationManager:
             date_match = re.search(date_pattern, response)
             time_match = re.search(time_pattern, response)
             
-            return bool(name_match) and bool(date_match) and bool(time_match)
+            return bool(name_match) or bool(date_match) or bool(time_match)
         return True
 
     def validate_response_time(self, response):
