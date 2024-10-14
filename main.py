@@ -58,11 +58,9 @@ def reinitialize_conversation(conversation):
         st.session_state['staff_name'] = staff_name
         conversation_manager._add_message(conversation, "user", staff_name, "question", "Q2")
         
-        
         spelling_prompt = "If the spelling of the staff name is correct, please say 'yes' or 'no'."
         conversation_manager.speech_service.synthesize_speech(spelling_prompt)
         conversation_manager._add_message(conversation, "system", staff_name_prompt, "question", "Q2")
-        
         
         spelling_response = conversation_manager.capture_user_response(15, skip_grammar_check=True)
         
@@ -70,7 +68,6 @@ def reinitialize_conversation(conversation):
             st.session_state['name_confirmed'] = True
             conversation_manager._add_message(conversation, "user", staff_name, "question", "Q2")
             conversation_manager.display_status('success', "Name confirmed")
-            # st.success("Name confirmed")
             conversation_manager.proceed_to_next_question(conversation_id)
         else:
             name_input_prompt = "Please enter the correct spelling of the staff name:"
@@ -93,6 +90,8 @@ def confirm_name(conversation, conversation_manager, conversation_id):
     render_previous_conversation(conversation)
     conversation_manager.display_status('success', "Name confirmed")
     conversation_manager.proceed_to_next_question(conversation_id)
+
+
 
 def main():
     st.sidebar.title("Care Home Incident and Accident Reporting System")
@@ -125,9 +124,9 @@ def main():
                     conversation.event_type = st.session_state['selected_event_type']
                     render_previous_conversation(conversation)
                     conversation_manager.display_status('success',"Event type confirmed")
-                    # st.success("Event type confirmed")
                     reinitialize_conversation(conversation)
                 return
+
 
 if __name__ == "__main__":
     if 'conversation_active' not in st.session_state:

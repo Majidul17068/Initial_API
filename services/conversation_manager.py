@@ -249,35 +249,104 @@ class ConversationManager:
 
             conversation.scenario_summary = summary
             conversation.updated_at = datetime.utcnow()
-
+        
+        if "Current_Summary" not in st.session_state:
+            st.session_state['Current_Summary'] = conversation.scenario_summary
+            
+        st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
+        
+        def update_summary(summary):
+            if "recent_summary" not in st.session_state:
+                st.session_state['recent_summary'] = summary
+            if "Updated_Summary" not in st.session_state:
+                st.session_state['Updated_Summary'] = ''
+            self.render_previous_conversation()
+            if "text_area_updated" not in st.session_state:
+                st.session_state['text_area_updated'] = st.session_state['recent_summary']
+            st.text_area(
+                "Edit the summary:", 
+                value=st.session_state['text_area_updated'], 
+                key='Updated_Summary_TextArea',
+                height=500,
+                on_change=self.display_updated_summary
+            )
         self.save_conversation_to_db(conversation_id)
+        
 
+    def display_updated_summary(self):
+        """Display the updated summary when the text area changes."""
+        conversation_id = self.conversation_id 
+        conversation = self.conversations.get(conversation_id)
+        st.session_state['Updated_Summary'] = st.session_state['Updated_Summary_TextArea']
+        conversation.summary_edited = True
+        self.render_previous_conversation()
+        st.success("Summary updated successfully!")
+        display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_Summary']}")
+        self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_Summary'], "Updated Summary")
+        conversation.updated_summary = st.session_state['Updated_Summary']
+        self.save_conversation_to_db(conversation_id)
+        
+    
     def save_conversation_to_db(self, conversation_id):
         conversation = self.conversations.get(conversation_id)
         if not conversation:
             return
 
-        data = {
-            "conversation_id": conversation.conversation_id,
-            "scenario_type": conversation.scenario_type,
-            "resident_id": conversation.resident_id,
-            "resident_name": conversation.resident_name,
-            "event_type": conversation.event_type,
-            "reporting_agent_id": conversation.reporting_person_id,
-            "reporting_agent": conversation.reporting_person,
-            "messages": conversation.messages,
-            "summary": conversation.scenario_summary,
-            "created_at": conversation.created_at,
-            "updated_at": conversation.updated_at
-        }
+        # Check if the summary has been edited
+        if conversation.summary_edited:
+            try:
+                conversations_collection = self.db_client.db["conversations"]
+                # Update only the updated_summary field if required
+                conversations_collection.update_one(
+                    {"conversation_id": conversation.conversation_id},
+                    {"$set": {"updated_summary": conversation.updated_summary}}
+                )
+                print(f"Updated summary for conversation {conversation_id} saved to MongoDB.")
+            except Exception as e:
+                print(f"Error updating summary in MongoDB: {e}")
+        else:
+            #Save the initial summary and conversation details
+            data = {
+                "conversation_id": conversation.conversation_id,
+                "scenario_type": conversation.scenario_type,
+                "resident_id": conversation.resident_id,
+                "resident_name": conversation.resident_name,
+                "event_type": conversation.event_type,
+                "reporting_agent_id": conversation.reporting_person_id,
+                "reporting_agent": conversation.reporting_person,
+                "messages": conversation.messages,
+                "summary": conversation.scenario_summary,
+                "updated_summary": conversation.updated_summary,
+                "created_at": conversation.created_at,
+                "updated_at": conversation.updated_at
+            }
 
-        try:
-            conversations_collection = self.db_client.db["conversations"]
-            conversations_collection.insert_one(data)
-            print(f"Conversation {conversation_id} saved to MongoDB.")
-        except Exception as e:
-            print(f"Error saving conversation to MongoDB: {e}")
+            try:
+                conversations_collection = self.db_client.db["conversations"]
+                conversations_collection.insert_one(data)
+                print(f"Conversation {conversation_id} saved to MongoDB.")
+            except Exception as e:
+                print(f"Error saving conversation to MongoDB: {e}")
 
     def stop_conversation(self, conversation_id):
         self.speech_service.stop_speech_recognition()
         print(f"Conversation {conversation_id} stopped.")
+    
+    def render_previous_conversation(self):
+        conversation = self.conversations.get(self.conversation_id)
+        for message in conversation.messages:
+            if(message['sender'] not in ('user', 'system')):
+                type = message['sender']
+            
+                if(type == 'info'):
+                    st.info(message["text"])
+                elif(type == 'error'):
+                    st.error(message["text"])
+                elif(type == 'warning'):
+                    st.warning(message["text"])
+                elif(type == 'success'):
+                    st.success(message["text"])
+            else:
+                display_chat_message(is_user=(message["sender"] == "user"), message_text=message["text"])
+    
+    
