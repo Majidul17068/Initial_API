@@ -283,7 +283,7 @@ class ConversationManager:
         st.success("Summary updated successfully!")
         display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_Summary']}")
         self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_Summary'], "Updated Summary")
-        conversation.updated_summary = st.session_state['Updated_Summary']
+        conversation.scenario_summary = st.session_state['Updated_Summary']
         self.save_conversation_to_db(conversation_id)
         
     
@@ -299,7 +299,7 @@ class ConversationManager:
                 # Update only the updated_summary field if required
                 conversations_collection.update_one(
                     {"conversation_id": conversation.conversation_id},
-                    {"$set": {"updated_summary": conversation.updated_summary}}
+                    {"$set": {"summary": conversation.scenario_summary}}
                 )
                 print(f"Updated summary for conversation {conversation_id} saved to MongoDB.")
             except Exception as e:
@@ -316,7 +316,6 @@ class ConversationManager:
                 "reporting_agent": conversation.reporting_person,
                 "messages": conversation.messages,
                 "summary": conversation.scenario_summary,
-                "updated_summary": conversation.updated_summary,
                 "created_at": conversation.created_at,
                 "updated_at": conversation.updated_at
             }
