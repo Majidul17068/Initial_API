@@ -263,13 +263,22 @@ class ConversationManager:
             self.render_previous_conversation()
             if "text_area_updated" not in st.session_state:
                 st.session_state['text_area_updated'] = st.session_state['recent_summary']
-            st.text_area(
+            # st.text_area(
+            #     "Edit the summary:", 
+            #     value=st.session_state['text_area_updated'], 
+            #     key='Updated_Summary_TextArea',
+            #     height=500,
+            #     on_change=self.display_updated_summary
+            # )
+            with st.form(key='summary_form'):
+                st.text_area(
                 "Edit the summary:", 
                 value=st.session_state['text_area_updated'], 
                 key='Updated_Summary_TextArea',
-                height=500,
-                on_change=self.display_updated_summary
-            )
+                height=500
+                )
+                st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
+            
         self.save_conversation_to_db(conversation_id)
         
 
@@ -277,7 +286,8 @@ class ConversationManager:
         """Display the updated summary when the text area changes."""
         conversation_id = self.conversation_id 
         conversation = self.conversations.get(conversation_id)
-        st.session_state['Updated_Summary'] = st.session_state['Updated_Summary_TextArea']
+        selected_event_results = st.session_state.get('Updated_Summary_TextArea')
+        st.session_state['Updated_Summary'] = selected_event_results
         conversation.summary_edited = True
         self.render_previous_conversation()
         st.success("Summary updated successfully!")
