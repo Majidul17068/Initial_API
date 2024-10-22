@@ -110,7 +110,7 @@ class ConversationManager:
         recipient_info = {
             
             'majidulislam17068@gmail.com': 'Mazid',
-            'mazidulmurad@gmail.com': 'Murad'
+            'est.med.74@gmail.com': 'Esteban'
         }
         
         incident_date = conversation.created_at
