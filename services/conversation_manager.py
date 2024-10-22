@@ -1,15 +1,25 @@
 import uuid
 import re
+import os
+import ssl
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, To
 from datetime import datetime
 from models.conversation import Conversation
 from services.speech_service import SpeechService
 from services.groq_service import GroqService
 from services.question_data import incident_questions, accident_questions
 from services.ui_helpers import display_chat_message
+from services.ui_helpers import add_custom_css
 from database import MongoDBClient
 import threading
+from datetime import datetime
 import time
 import streamlit as st  
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 class ConversationManager:
     def __init__(self):
@@ -83,6 +93,73 @@ class ConversationManager:
         self.speech_service.synthesize_speech(event_type_prompt)
 
         conversation.waiting_for_event_type_selection = True
+        
+    def notification(self, conversation_id):
+        
+        conversation = self.conversations.get(conversation_id)
+        # Get the SendGrid API key from environment variables
+        SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+        # Check if the API key is available
+        if not SENDGRID_API_KEY:
+            raise ValueError("SENDGRID_API_KEY environment variable is not set. Please check your .env file.")
+
+        ssl._create_default_https_context = ssl._create_default_https_context
+
+        # Set of emails to send to
+        recipient_info = {
+            
+            'majidulislam17068@gmail.com': 'Mazid',
+            'est.med.74@gmail.com': 'Esteban'
+        }
+        
+        incident_date = conversation.created_at
+        incident_date_str = incident_date.strftime("%Y-%m-%d %H:%M:%S")
+        summary = conversation.scenario_summary
+        refined_summary = f"{summary}"
+
+        # Set dynamic data for the email
+        base_dynamic_data = {
+            
+            'type': conversation.scenario_type,
+            'reporting_person': conversation.reporting_person,
+            'incident_id': conversation.conversation_id,
+            'incident_date': incident_date_str,
+            'report_sumary': refined_summary
+        }
+
+        for email, manager_name in recipient_info.items():
+            # Set dynamic data for the email, including the personalized manager name
+            dynamic_data = base_dynamic_data.copy()  # Copy the base data to avoid overwriting
+            dynamic_data['manager_name'] = manager_name  # Personalize manager name
+
+            # Create the email message and assign the template ID
+            message = Mail(
+                from_email='mislam@tulip-tech.com',
+                to_emails=To(email)
+            )
+            
+            # Assign the template ID
+            message.template_id = 'd-e97c8a529800421599dfdcf120d70d03'
+            
+            # Pass dynamic template data
+            message.dynamic_template_data = dynamic_data
+
+            try:
+                # Send the email using SendGrid API client
+                sg = SendGridAPIClient(SENDGRID_API_KEY)
+                response = sg.send(message)
+                
+                # Log the response from the SendGrid API
+                print(f"Email sent to {email}")
+                print(f"Status Code: {response.status_code}")
+                print(f"Response Body: {response.body.decode() if response.body else 'No content'}")
+                print(f"Response Headers: {response.headers}")
+
+            except Exception as e:
+                # Catch and display any errors that occur
+                print(f"An error occurred while sending email to {email}: {str(e)}")
+        
 
 
     def proceed_to_next_question(self, conversation_id):
@@ -90,8 +167,10 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         conversation.current_question_index += 1
         if conversation.current_question_index == len(conversation.questions):
-            self.notify_manager(conversation_id)
             self.finalize_conversation(conversation_id)
+            time.sleep(10)
+            updated_summary_flag = False
+            self.notify_manager(conversation_id, updated_summary_flag)
             return
         self.ask_current_question(conversation_id)
 
@@ -214,9 +293,13 @@ class ConversationManager:
             st.success(message)
             
 
-    def notify_manager(self, conversation_id):
+    def notify_manager(self, conversation_id, flag):
         """Handles notifying the manager based on user response."""
-        prompt = "Would you like me to notify the manager?"
+        if flag:
+            prompt = "Would you like me to notify the manager with updated summary?"
+        else:
+            prompt = "Would you like to notify the manager with this event summary?"
+            
         self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
         self.speech_service.synthesize_speech(prompt)
         
@@ -224,6 +307,7 @@ class ConversationManager:
 
         if "yes" in user_response.lower():
             response_text = "Manager has been notified."
+            self.notification(conversation_id)
         else:
             response_text = "Manager hasn't been notified."
         
@@ -285,6 +369,7 @@ class ConversationManager:
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""
         conversation_id = self.conversation_id 
+        add_custom_css()
         conversation = self.conversations.get(conversation_id)
         selected_event_results = st.session_state.get('Updated_Summary_TextArea')
         st.session_state['Updated_Summary'] = selected_event_results
@@ -294,7 +379,10 @@ class ConversationManager:
         display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_Summary']}")
         self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_Summary'], "Updated Summary")
         conversation.scenario_summary = st.session_state['Updated_Summary']
+        updated_summary = True
         self.save_conversation_to_db(conversation_id)
+        self.notify_manager(conversation_id, updated_summary)
+        
         
     
     def save_conversation_to_db(self, conversation_id):
