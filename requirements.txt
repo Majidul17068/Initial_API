@@ -9,3 +9,4 @@ pydantic-settings
 streamlit
 pymongo
 dnspython
+sendgrid
