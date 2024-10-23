@@ -6,6 +6,7 @@ def start_conversation():
     conversation_manager = ConversationManager()
     conversation_id = conversation_manager.create_new_conversation()
     conversation_manager.start_conversation(conversation_id)
+    
     st.session_state['conversation_manager'] = conversation_manager
     st.session_state['conversation_id'] = conversation_id
     st.session_state['conversation_active'] = True
@@ -15,6 +16,7 @@ def start_conversation():
     st.session_state['staff_name'] = ""
     st.session_state['name_confirmed'] = False
     st.session_state['corrected_name'] = ""
+
 
 def stop_conversation():
     if st.session_state.get('conversation_active', False):
@@ -123,7 +125,7 @@ def main():
                     conversation_manager._add_message(conversation, "user", st.session_state['selected_event_type'], "answer", "Q1")
                     conversation.event_type = st.session_state['selected_event_type']
                     render_previous_conversation(conversation)
-                    conversation_manager.display_status('success',"Event type confirmed")
+                    conversation_manager.display_status('success', "Event type confirmed")
                     reinitialize_conversation(conversation)
                 return
 

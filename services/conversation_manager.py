@@ -35,16 +35,96 @@ class ConversationManager:
         return conversation_id
 
     def start_conversation(self, conversation_id):
-        """Initializes the conversation and determines the scenario type."""
+        """Initializes the conversation and determines the scenario type, including resident selection."""
         self.conversation_id = conversation_id
         conversation = self.conversations.get(conversation_id)
+        
+        # Display the initial welcome prompt
         welcome_prompt = f"Hi {conversation.reporting_person}, Welcome to the Care Home Incident and Accident Reporting System."
-        self._add_message(conversation, "system", welcome_prompt, "system_message")
+        self._add_message(conversation, "system", welcome_prompt, "system_message", "Q0")
+        
         self.speech_service.synthesize_speech(welcome_prompt)
-        sad_welcome = f"I'm sorry to hear that there's been an event involving {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
-        self._add_message(conversation, "system", sad_welcome, "system_message")
-        self.speech_service.synthesize_speech(sad_welcome)
+
+        selct_resident="Please select resident from the list"
+        self._add_message(conversation, "system", selct_resident, "system_message", "Q0")
+        self.speech_service.synthesize_speech(selct_resident)
+        
+        # Call resident selection process here
+        add_custom_css
+        self._select_resident(conversation_id)
+
+    def _select_resident(self, conversation_id):
+        """
+        Function to display a selectbox to select resident_id and resident_name,
+        and store the selected values in the conversation object.
+        """
+        conversation = self.conversations.get(conversation_id)
+        residents = self.fetch_residents()
+
+        if not residents:
+            error_message = "No residents found in the database. Please check the database."
+            self._add_message(conversation, "system", error_message, "system_message")
+            self.speech_service.synthesize_speech(error_message)
+            return
+
+        # Convert residents to a dictionary for the selectbox
+        resident_options = {
+            f"{res['resident_name']} (ID: {res['resident_id']})": res
+            for res in residents
+        }
+        st.session_state['resident_options'] = resident_options
+
+        def on_resident_change(resident_options):
+            selected_resident_key = st.session_state.get('selected_resident_key')
+            if selected_resident_key and selected_resident_key != "Select a resident...":
+                selected_resident = resident_options[selected_resident_key]
+                conversation.resident_id = selected_resident['resident_id']
+                conversation.resident_name = selected_resident['resident_name']
+
+                # Add the selected resident details to the conversation messages
+                selected_resident_message = f"Selected Resident: {conversation.resident_name} (ID: {conversation.resident_id})"
+                self._add_message(conversation, "user", selected_resident_message, "user", "Q0")
+                self.render_previous_conversation()
+                add_custom_css()
+                self._proceed_after_resident_selection(conversation_id)
+            else:
+                pass
+
+        st.selectbox(
+            "Please select a resident:",
+            options=["Select a resident..."] + list(resident_options.keys()),
+            key='selected_resident_key',
+            on_change=lambda: on_resident_change(resident_options)
+        )
+
+    def _proceed_after_resident_selection(self, conversation_id):
+        """Proceed with conversation after resident selection."""
+        conversation = self.conversations.get(conversation_id)
+        apology_prompt = f"I'm sorry to hear that there's been an event involving {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
+        self._add_message(conversation, "system", apology_prompt, "system_message")
+        self.speech_service.synthesize_speech(apology_prompt)
+        
+        # Proceed to the next step of asking scenario type
+        add_custom_css()
         self._ask_scenario_type(conversation_id)
+
+    def fetch_residents(self):
+        """
+        Fetches distinct resident_id and resident_name pairs from the database.
+        """
+        # Query to fetch all unique resident_id and resident_name
+        residents = self.db_client.db["conversations"].distinct("resident_id", {"resident_name": {"$exists": True}})
+        
+        resident_list = []
+        for resident_id in residents:
+            resident_data = self.db_client.db["conversations"].find_one({"resident_id": resident_id})
+            if resident_data:
+                resident_list.append({
+                    "resident_id": resident_data.get("resident_id"),
+                    "resident_name": resident_data.get("resident_name")
+                })
+
+        return resident_list
 
     def _ask_scenario_type(self, conversation_id):
         """Asks the user about the scenario type."""
@@ -92,7 +172,9 @@ class ConversationManager:
         self._add_message(conversation, "system", event_type_prompt, "question", "Q1")
         self.speech_service.synthesize_speech(event_type_prompt)
 
+        # Set waiting_for_event_type_selection to True
         conversation.waiting_for_event_type_selection = True
+
         
     def notification(self, conversation_id):
         
@@ -160,7 +242,6 @@ class ConversationManager:
                 # Catch and display any errors that occur
                 print(f"An error occurred while sending email to {email}: {str(e)}")
         
-
 
     def proceed_to_next_question(self, conversation_id):
         """Handles moving to the next question."""

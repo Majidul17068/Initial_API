@@ -10,10 +10,11 @@ class Conversation:
         self.scenario_summary = None
         self.updated_summary = None
         self.messages = []
-        self.resident_id = "Res_01"         
-        self.resident_name = "John Smith"        
+        self.resident_id = None        
+        self.resident_name = None        
         self.reporting_person_id = "Agent_01"  
         self.reporting_person = "Luca"     
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
         self.summary_edited = False
+        self.waiting_for_event_type_selection = False 
