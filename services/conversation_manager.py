@@ -189,7 +189,7 @@ class ConversationManager:
                 self.speech_service.synthesize_speech(error_invalid_time)
                 continue
             
-            if self.needs_validation_location(current_question) and not self.validate_response_location(user_response):
+            if self.needs_validation_location(current_question) and self.validate_response_location(user_response):
                 error_prompt_location = "Please specify a location or place."
                 self._add_message(conversation, "system", error_prompt_location, "system_message")
                 self.speech_service.synthesize_speech(error_prompt_location)
@@ -248,10 +248,10 @@ class ConversationManager:
     def validate_response_location(self, response):
         """Validate if the response contains a recognizable location or place."""
         place_patterns = [
-            r'\b(hospital|clinic|home|street|building|park|school|office|restaurant|bedroom|garden)\b',
-            r'\broom\s\d{1,3}\b', 
-            r'\bstation\b',
-            r'\broad\b'
+            # r'\b(hospital|clinic|home|street|building|park|school|office|restaurant|bedroom|garden)\b',
+            # r'\broom\s\d{1,3}\b', 
+            # r'\bstation\b',
+            # r'\broad\b'
         ]
         
         for pattern in place_patterns:
@@ -308,11 +308,15 @@ class ConversationManager:
         if "yes" in user_response.lower():
             response_text = "Manager has been notified."
             self.notification(conversation_id)
+            
         else:
             response_text = "Manager hasn't been notified."
         
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
         self.speech_service.synthesize_speech(response_text) 
+        final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
+        self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
+        self.speech_service.synthesize_speech(final_prompt)
 
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
