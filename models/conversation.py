@@ -14,7 +14,8 @@ class Conversation:
         self.resident_name = None        
         self.reporting_person_id = "Agent_01"  
         self.reporting_person = "Luca"     
+        self.summary_edited = False
+        self.waiting_for_event_type_selection = False
+        self.post_event_completed=False
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
-        self.summary_edited = False
-        self.waiting_for_event_type_selection = False 

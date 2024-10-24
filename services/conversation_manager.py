@@ -488,7 +488,6 @@ class ConversationManager:
             except Exception as e:
                 print(f"Error updating summary in MongoDB: {e}")
         else:
-            #Save the initial summary and conversation details
             data = {
                 "conversation_id": conversation.conversation_id,
                 "scenario_type": conversation.scenario_type,
@@ -499,6 +498,7 @@ class ConversationManager:
                 "reporting_agent": conversation.reporting_person,
                 "messages": conversation.messages,
                 "summary": conversation.scenario_summary,
+                "post_event_completed":conversation.post_event_completed,
                 "created_at": conversation.created_at,
                 "updated_at": conversation.updated_at
             }
