@@ -97,7 +97,7 @@ def confirm_name(conversation, conversation_manager, conversation_id):
 
 def main():
     st.sidebar.title("Care Home Incident and Accident Reporting System")
-    st.sidebar.image("logo.png", caption="Care Home AI Agent", width=200)
+    st.sidebar.image("Langdalelogo.png", caption="Care Home AI Agent", width=200)
     add_custom_css()
 
     if st.sidebar.button("Start Conversation") and not st.session_state.get('conversation_active', False):
