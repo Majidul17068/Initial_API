@@ -247,7 +247,7 @@ class ConversationManager:
 
             # Create the email message and assign the template ID
             message = Mail(
-                from_email='mislam@tulip-tech.com',
+                from_email='reporting@tulip-tech.com',
                 to_emails=To(email)
             )
             
