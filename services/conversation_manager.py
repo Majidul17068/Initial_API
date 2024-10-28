@@ -69,9 +69,10 @@ class ConversationManager:
 
         # Convert residents to a dictionary for the selectbox
         resident_options = {
-            f"{res['resident_name']} (ID: {res['resident_id']})": res
+            res['resident_name']: res
             for res in residents
         }
+
         st.session_state['resident_options'] = resident_options
 
         def on_resident_change(resident_options):
@@ -82,7 +83,7 @@ class ConversationManager:
                 conversation.resident_name = selected_resident['resident_name']
 
                 # Add the selected resident details to the conversation messages
-                selected_resident_message = f"Selected Resident: {conversation.resident_name} (ID: {conversation.resident_id})"
+                selected_resident_message = f"Selected Resident: {conversation.resident_name}"
                 self._add_message(conversation, "user", selected_resident_message, "user", "Q0")
                 self.render_previous_conversation()
                 add_custom_css()
@@ -110,20 +111,49 @@ class ConversationManager:
 
     def fetch_residents(self):
         """
-        Fetches distinct resident_id and resident_name pairs from the database.
+        Returns a list of residents from a predefined custom list.
         """
-        # Query to fetch all unique resident_id and resident_name
-        residents = self.db_client.db["conversations"].distinct("resident_id", {"resident_name": {"$exists": True}})
-        
-        resident_list = []
-        for resident_id in residents:
-            resident_data = self.db_client.db["conversations"].find_one({"resident_id": resident_id})
-            if resident_data:
-                resident_list.append({
-                    "resident_id": resident_data.get("resident_id"),
-                    "resident_name": resident_data.get("resident_name")
-                })
-
+        resident_list = [
+            {"resident_id": "5d90b9ff-1294-4200-8b75-2ea86949a487", "resident_name": "JESSIE COOPER"},
+            {"resident_id": "25f00dc7-e379-4e40-8382-8b98db4e1ed4", "resident_name": "JENNIFER GREEN"},
+            {"resident_id": "ca761e17-8ce7-48aa-80f6-e56bc699fbef", "resident_name": "ANITA BUSWELL"},
+            {"resident_id": "2e72e712-635a-40e5-ac47-f588033e130a", "resident_name": "ARTHUR CAPENHURST"},
+            {"resident_id": "0e519c4a-65fe-4be0-8c6d-17fa48e7fdb6", "resident_name": "JASHVANTI KAKAD"},
+            {"resident_id": "8766c05b-12db-4979-b025-9c708c77dee7", "resident_name": "JUNE THORPE"},
+            {"resident_id": "bb4fa59f-347a-4c42-95bc-86db7354691a", "resident_name": "ZAID TELADIA"},
+            {"resident_id": "03792b04-4137-4ba6-bd1c-1994a9e745c2", "resident_name": "LONNIE CALHOUN"},
+            {"resident_id": "a1b9c3e5-725c-442d-9a42-a07deb815f14", "resident_name": "ASTRID DEACON"},
+            {"resident_id": "17125fe2-f402-41e0-b873-69ee9067c996", "resident_name": "MICHAEL TRUSLOVE"},
+            {"resident_id": "cd8819f8-3583-40bb-aeee-06465da48074", "resident_name": "ANTHONY HENSON"},
+            {"resident_id": "19c65ff5-9472-4441-809e-5afc142a8d85", "resident_name": "ADRIAN EVERITT"},
+            {"resident_id": "e0435ffa-b8d6-4ad2-b7e4-6758b5b45c75", "resident_name": "MARK WHEELER"},
+            {"resident_id": "fc7edd26-27fe-4ef8-bea3-f22465a065cd", "resident_name": "PETER BRYAN"},
+            {"resident_id": "f6625e7e-27ba-4500-8fd6-c3ba73c44eb6", "resident_name": "ANNE SANSOME"},
+            {"resident_id": "e1855203-c76b-4aa9-aafc-e33417569f46", "resident_name": "PATRICIA CHILDS"},
+            {"resident_id": "a28c0ddd-5d41-4da3-8d02-0c6e86c54057", "resident_name": "SYLVIA WALKER"},
+            {"resident_id": "ea0b6e2d-4d73-4a7c-acf8-f7c170e0711f", "resident_name": "BEVERLEY BUNNEY"},
+            {"resident_id": "48d7b433-e60b-4283-a516-005753e8f6b4", "resident_name": "PATRICK STAFFORD"},
+            {"resident_id": "7b73d6d9-5c53-4119-b403-3ad0aec06e49", "resident_name": "ROSEMARY BENNETT"},
+            {"resident_id": "7606bee4-eeed-4a8c-9bae-2b551ac6ae48", "resident_name": "PATRICIA GARDINER"},
+            {"resident_id": "976e0204-c40b-4480-ba1d-a41d10fa4843", "resident_name": "PAULA JEYNES"},
+            {"resident_id": "72dee3da-bb21-40c4-af60-fbe4d50cba53", "resident_name": "BRENDA VERNON"},
+            {"resident_id": "353e5803-5f22-4e6f-9c84-bea224b792ca", "resident_name": "DAVID BRANT"},
+            {"resident_id": "bba04f76-8be6-4572-99d1-0a1fbde111ba", "resident_name": "DENNIS NICHOLLS"},
+            {"resident_id": "b4795a2b-7c37-405c-b04c-93ba6289c88b", "resident_name": "DEREK PALMER"},
+            {"resident_id": "96ef54a0-8518-4fcd-96d6-6a07cd74d172", "resident_name": "DAVID STAMERS"},
+            {"resident_id": "f4e06367-f150-485b-b5b8-3144b58b6675", "resident_name": "EILEEN BEDDER"},
+            {"resident_id": "991ee120-bb55-46fc-8fc3-8b5ad5fc2ce8", "resident_name": "ELIZABETH WALKER"},
+            {"resident_id": "f5910ece-5055-4bc9-8e1f-ff4ef9de1698", "resident_name": "FRANCINE QUILITZ"},
+            {"resident_id": "b1c547e2-6c36-4c78-a1e6-e5471d652fa2", "resident_name": "MICHAEL ROWELL"},
+            {"resident_id": "5cac1ecb-62bf-40e2-a47e-93b5e7ee3c28", "resident_name": "ARTHUR BREWARD"},
+            {"resident_id": "4ac7e816-60fb-4275-8697-0a80a6352049", "resident_name": "ROSEMARY WHITE"},
+            {"resident_id": "f775fff5-a5ba-4b79-b536-f1a204be7c39", "resident_name": "JOHN PAYNE"},
+            {"resident_id": "f51ef4df-fb9e-4f02-9258-3346475044f2", "resident_name": "IVY ORTON"},
+            {"resident_id": "3d3c1c28-43f3-4b85-ac4a-51881cc887dd", "resident_name": "GLENDA WALKER"},
+            {"resident_id": "6b995e22-3aae-45f2-b79c-3767e884eb14", "resident_name": "DAVID SAUNDERS"},
+            {"resident_id": "3a577994-c7b8-4ba5-8b80-b725403091ec", "resident_name": "BRIAN SULLIVAN"},
+            {"resident_id": "cf8ab9cc-4ceb-44ff-823b-54899bb51c87", "resident_name": "ALISON DIBB"},
+        ]
         return resident_list
 
     def _ask_scenario_type(self, conversation_id):
