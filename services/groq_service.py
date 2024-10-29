@@ -7,7 +7,6 @@ class GroqService:
  
     def summarize_scenario(self, responses: dict, scenario_type: str, event_type:str) -> str:
         try:
-            print(scenario_type)
             # Combine the provided Q&A responses into a description
             combined_description = f"This is a report about a {scenario_type}.\n"
             for i, (question, answer) in enumerate(responses.items(), start=1):
