@@ -40,7 +40,7 @@ pipeline {
         stage('Main Build Docker Image') {
             when {
                    anyOf {
-		      branch 'feature/deploy'
+		      branch 'develop'
                    }
             }
             steps {
@@ -50,7 +50,7 @@ pipeline {
                 sh 'cp /var/jenkins_home/env/.env.care-fe-prod .env.care-fe-prod'
                 sh "sed -i 's/ENVI/.env.care-fe-prod/g' Dockerfile"
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:prod -f Dockerfile .'
-                } else if (env.GIT_BRANCH == 'feature/deploy') {
+                } else if (env.GIT_BRANCH == 'develop') {
                 sh 'cp /var/jenkins_home/env/.env.careapps-ai .env'
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
                 }
@@ -60,7 +60,7 @@ pipeline {
         stage('Login to AWS ECR') {
             when {
                    anyOf {
-		     branch 'feature/deploy'
+		     branch 'develop'
                    }
             }
             steps {
@@ -72,7 +72,7 @@ pipeline {
         stage('Tag and Push to ECR') {
             when {
                    anyOf {
-		    branch 'feature/deploy'
+		    branch 'develop'
                    }
             }
             steps {
@@ -83,7 +83,7 @@ pipeline {
                 sh "docker push $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:prod"
                 // Cleanup the Docker image
                 sh "docker images  | grep $DOCKER_IMAGE_NAME | grep prod | awk '{print \$3}' | xargs -L 1 docker rmi -f"
-                 } else if (env.GIT_BRANCH == 'feature/deploy') {
+                 } else if (env.GIT_BRANCH == 'develop') {
                 sh "docker tag $DOCKER_IMAGE_NAME:dev $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:dev"
                 // Push the Docker image to ECR
                 sh "docker push $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:dev"
@@ -95,11 +95,11 @@ pipeline {
             } 	        
         stage ('deploy to dev') {
             when {
-                branch 'feature/deploy'
+                branch 'develop'
             }
             steps {
                 script {
-                        def servers = ['10.217.126.24']
+                        def servers = ['10.217.126.27']
                         def branch = 'develop'
                         deploy_docker (servers,branch)
                     }
