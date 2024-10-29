@@ -1,5 +1,9 @@
-# Use the official Python image from the Docker Hub
 FROM python:3.12.6-slim
+
+# Install necessary system packages, including audio dependencies
+RUN apt-get update && \
+    apt-get install -y libasound2 libffi-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
