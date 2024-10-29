@@ -7,6 +7,7 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV STREAMLIT_SERVER_PORT=8502
 
 # Install pipenv and system dependencies for any packages requiring compilation
 RUN pip install --no-cache-dir pipenv
@@ -20,5 +21,8 @@ RUN pipenv install --deploy --ignore-pipfile
 # Copy the rest of the application code into the container
 COPY . .
 
-# Set the entry point to run the script
-ENTRYPOINT ["pipenv", "run", "python", "authenticator.py"]
+# Set the entry point to run the Streamlit application
+ENTRYPOINT ["pipenv", "run", "streamlit", "run", "authenticator.py"]
+
+# Optionally, expose the default Streamlit port
+EXPOSE 8502
