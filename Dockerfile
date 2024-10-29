@@ -1,0 +1,24 @@
+# Use the official Python image from the Docker Hub
+FROM python:3.12.6-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install pipenv and system dependencies for any packages requiring compilation
+RUN pip install --no-cache-dir pipenv
+
+# Copy Pipfile and Pipfile.lock into the container
+COPY Pipfile Pipfile.lock ./
+
+# Install dependencies using Pipenv
+RUN pipenv install --deploy --ignore-pipfile
+
+# Copy the rest of the application code into the container
+COPY . .
+
+# Set the entry point to run the script
+ENTRYPOINT ["pipenv", "run", "python", "authenticator.py"]
