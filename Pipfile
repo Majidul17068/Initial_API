@@ -13,6 +13,9 @@ aiofiles = "*"
 pydantic = "==2.9"
 pydantic-settings = "*"
 streamlit = "*"
+pymongo = "*"
+dnspython = "*"
+sendgrid = "*"
 
 [dev-packages]
 
