@@ -2,7 +2,7 @@ FROM python:3.12.6-slim
 
 # Install necessary system packages, including audio dependencies
 RUN apt-get update && \
-    apt-get install -y libasound2 libffi-dev && \
+    apt-get install -y libasound2 libffi-dev ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
