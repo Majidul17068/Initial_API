@@ -99,7 +99,7 @@ pipeline {
             }
             steps {
                 script {
-                        def servers = ['10.217.126.27']
+                        def servers = ['10.217.126.24']
                         def branch = 'develop'
                         deploy_docker (servers,branch)
                     }
