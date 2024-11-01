@@ -1,10 +1,15 @@
 import streamlit as st
+import uuid
 from services.conversation_manager import ConversationManager
 from services.ui_helpers import add_custom_css, display_chat_message
+from load_azure_sdk import load_azure_speech_sdk
 
 def start_conversation():
-    conversation_manager = ConversationManager()
-    conversation_id = conversation_manager.create_new_conversation()
+    conversation_id = str(uuid.uuid4())
+    
+    print('conversation_id: ', conversation_id)
+    
+    conversation_manager = ConversationManager(conversation_id)
     conversation_manager.start_conversation(conversation_id)
     
     st.session_state['conversation_manager'] = conversation_manager
@@ -96,6 +101,9 @@ def confirm_name(conversation, conversation_manager, conversation_id):
 
 
 def main():
+    
+    load_azure_speech_sdk()
+    
     st.sidebar.title("Care Home Incident and Accident Reporting System")
     st.sidebar.image("Langdalelogo.png", caption="Care Home AI Agent", width=200)
     add_custom_css()

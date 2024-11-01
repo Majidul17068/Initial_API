@@ -22,15 +22,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class ConversationManager:
-    def __init__(self):
+    def __init__(self, conversation_id):
         self.conversations = {}
-        self.speech_service = SpeechService(self)
+        self.speech_service = SpeechService(self, conversation_id)
         self.groq_service = GroqService()
         self.db_client = MongoDBClient()
+        self.create_new_conversation(conversation_id)
 
-    def create_new_conversation(self):
+    def create_new_conversation(self,conversation_id):
         """Creates a new conversation and assigns a unique ID."""
-        conversation_id = str(uuid.uuid4())
         self.conversations[conversation_id] = Conversation(conversation_id)
         return conversation_id
 
