@@ -81,7 +81,7 @@ class ConversationManager:
                 selected_resident = resident_options[selected_resident_key]
                 conversation.resident_id = selected_resident['resident_id']
                 conversation.resident_name = selected_resident['resident_name']
-
+                resident_name=conversation.resident_name
                 # Add the selected resident details to the conversation messages
                 selected_resident_message = f"Selected Resident: {conversation.resident_name}"
                 self._add_message(conversation, "user", selected_resident_message, "user", "Q0")
@@ -432,7 +432,7 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        summary = self.groq_service.summarize_scenario(conversation.responses, conversation.scenario_type,conversation.event_type)
+        summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
         with st.spinner("Processing the event summary..."):
             summary_prompt = "Thank you for filling out the form, here is a summary of the event..."

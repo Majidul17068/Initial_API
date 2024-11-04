@@ -75,6 +75,8 @@ def reinitialize_conversation(conversation):
             st.session_state['name_confirmed'] = True
             conversation_manager._add_message(conversation, "user", staff_name, "question", "Q2")
             conversation_manager.display_status('success', "Name confirmed")
+            conversation.witness = staff_name
+            print(conversation.witness)
             conversation_manager.proceed_to_next_question(conversation_id)
         else:
             name_input_prompt = "Please enter the correct spelling of the staff name:"
@@ -85,14 +87,17 @@ def reinitialize_conversation(conversation):
             st.text_input(
                 "Please enter the correct spelling of the staff name:",
                 key='staff_name_input',
-                on_change=lambda: confirm_name(conversation, conversation_manager, conversation_id)
+                on_change=lambda: confirm_name(conversation, conversation_manager, conversation_id),
             )
+            
 
 def confirm_name(conversation, conversation_manager, conversation_id):
     add_custom_css()
     corrected_name = st.session_state['staff_name_input']
     st.session_state['corrected_name'] = corrected_name
     st.session_state['name_confirmed'] = True
+    conversation.witness = corrected_name
+    print(conversation.witness)
     conversation_manager._add_message(conversation, "user", corrected_name, "answer", "Q2")
     render_previous_conversation(conversation)
     conversation_manager.display_status('success', "Name confirmed")
