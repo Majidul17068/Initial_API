@@ -12,7 +12,7 @@ def check_password():
 
     def login_form():
         """Form with widgets to collect user information"""
-        st.title("Care Home Incident and Accident Reporting System")
+        st.title("Care Home Immediate Incident and Accident Reporting System")
         st.sidebar.image("Langdalelogo.png", caption="Care Home AI Agent", width=200)
         
         with st.form("Credentials"):

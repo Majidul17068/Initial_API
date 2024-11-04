@@ -10,6 +10,7 @@ class Conversation:
         self.scenario_summary = None
         self.updated_summary = None
         self.messages = []
+        self.witness=None
         self.resident_id = None        
         self.resident_name = None        
         self.reporting_person_id = "Agent_01"  

@@ -5,13 +5,20 @@ class GroqService:
     def __init__(self):
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
  
-    def summarize_scenario(self, responses: dict, scenario_type: str, event_type:str) -> str:
+    def summarize_scenario(
+        self, 
+        responses: dict,
+        resident_name: str, 
+        scenario_type: str, 
+        event_type: str, 
+        witness: str
+    ) -> str:
         try:
             # Combine the provided Q&A responses into a description
             combined_description = f"This is a report about a {scenario_type}.\n"
             for i, (question, answer) in enumerate(responses.items(), start=1):
                 combined_description += f"{i}. {question}: {answer}\n"
- 
+
             # Generate the summary response
             response = self.client.chat.completions.create(
                 messages=[
@@ -23,9 +30,9 @@ class GroqService:
                             f"Analyze the user's responses to identify specific action-related keywords or phrases that describe the nature of the {scenario_type}, including the part of the body involved in any injury. "
                             "Focus on extracting these keywords directly from the user's narrative without inferring, assuming, or adding any information that was not explicitly mentioned by the user.\n"
                             "The report must be descriptive and structured as follows:\n"
-                            f"1. **Title of the {scenario_type}**: {event_type}: Provide a clear, concise title using the exact words provided by the user. Include the part of the body involved if mentioned. Do not add any inferred terms.\n"
-                            f"2. **Descriptive Summary**: Craft a detailed paragraph explaining the {scenario_type} in a narrative form using only the user's words. Ensure the description is context-specific, including the time, location, people involved, actions taken, any medical terms (such as BP, pulse, temperature, respiration and other medical related term), and the part of the body involved in the injury, if explicitly stated. **Do not infer any injuries, actions, or other details not explicitly stated by the user**.\n"
-                            "3. **Key Findings**: Summarize the main facts using only the user's responses. Extract key elements such as location, actions, individuals involved, medical observations (e.g., BP, pulse, temperature), and the part of the body injured. **Do not add or infer any details**. Bold important facts and findings.\n"
+                            f"1. **Title of the {scenario_type}**: {event_type}  - Provide a clear, concise title using the exact words provided by the user. Include the part of the body involved if mentioned. Do not add any inferred terms.\n"
+                            f"2. **Descriptive Summary**: Craft a detailed paragraph explaining the incident in a narrative form using only the user's words. Ensure the description is context-specific, including the time, location, and all individuals involved (e.g., resident:{resident_name}, Staff: {witness}, and any other people mentioned in the responses), actions taken, medical terms, and the part of the body involved in any injury if explicitly stated. **Do not infer any injuries, actions, or other details not explicitly stated by the user**.\n"
+                            "3. **Key Findings**: Summarize the main facts using only the user's responses. Extract key elements such as location, actions, individuals involved (resident, witness, and others), medical observations, and the part of the body injured. **Do not add or infer any details**. Bold important facts and findings.\n"
                             "4. **Action Taken**: Describe any actions taken based on the user's input. Highlight any immediate responses or follow-up actions, using only the actions described by the user. **Do not add any details that were not provided**.\n"
                             "5. **Don't censor sensitive or violent words**.\n"
                             "6. **Maintain Clarity**: Use professional language that directly reflects the event's seriousness or nature, ensuring that the title and report reflect the user's exact input without inferring any additional information.\n"
@@ -34,17 +41,23 @@ class GroqService:
                     },
                     {
                         "role": "user",
-                        "content": f"Summarization of the following {scenario_type} :\n{combined_description}"
+                        "content": (
+                            f"Please provide a summary of the following {scenario_type} involving {event_type},"
+                            f"Including Identifing individuals mentioned in the provided context:\n{combined_description}"
+                        )
+                        
                     }
                 ],
-                model="llama-3.1-70b-versatile"
+                model="llama-3.1-70b-versatile",
+                temperature=0.2
             )
- 
+
             return response.choices[0].message.content.strip()
- 
+
         except Exception as e:
             print(f"Error summarizing scenario: {e}")
             return "An error occurred during scenario summarization."
+
  
  
        
@@ -100,7 +113,8 @@ class GroqService:
                         "content": user_response.strip()
                     }
                 ],  
-                model="llama-3.1-70b-versatile"
+                model="llama-3.1-70b-versatile",
+                temperature=0.5
             )
    
             corrected_text= response.choices[0].message.content.strip()
