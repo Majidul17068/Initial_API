@@ -31,6 +31,9 @@ def add_custom_css():
         .user-message .message-text {
             background-color: #daf0da;
         }
+        .stMain .stElementContainer.element-container[data-stale="true"] {
+            display: none;
+        }
         </style>
         """, unsafe_allow_html=True
     )

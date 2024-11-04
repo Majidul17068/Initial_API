@@ -3,6 +3,19 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+def reset_user_transcript(conversation_id):
+    """
+    Makes an API call to fetch conversations based on resident_id, resident_name, and event_type.
+    """
+    url = f"{os.getenv("VOICE_TRANSCRIPT_API_ENDPOINT")}/reset-user-text/?conversation_id={conversation_id}"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    requests.get(url, headers=headers)
+    print('api call : reset: ', url)
+
+
+
 def fetch_user_transcript(conversation_id):
     """
     Makes an API call to fetch conversations based on resident_id, resident_name, and event_type.
