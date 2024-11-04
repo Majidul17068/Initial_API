@@ -51,7 +51,7 @@ pipeline {
                 sh "sed -i 's/ENVI/.env.care-fe-prod/g' Dockerfile"
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:prod -f Dockerfile .'
                 } else if (env.GIT_BRANCH == 'develop') {
-                sh 'cp /var/jenkins_home/env/.env.careapps-ai .env'
+                sh 'cp /var/jenkins_home/env/.env.careapps-ai-initial .env'
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
                 }
                 }
