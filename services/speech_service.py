@@ -146,7 +146,7 @@ class SpeechService:
         is_speaking = True
         
         while is_speaking:
-            time.sleep(0.25)  # Call the function every second
+            time.sleep(2)  # Call the function every second
             ut = fetch_is_speaking(self.conversation_id)
             print('api call: ', ut)
             is_speaking = ut['is_speaking']

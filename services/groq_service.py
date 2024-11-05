@@ -11,7 +11,7 @@ class GroqService:
         resident_name: str, 
         scenario_type: str, 
         event_type: str, 
-        witness: str
+        staff: str
     ) -> str:
         try:
             # Combine the provided Q&A responses into a description
@@ -31,8 +31,8 @@ class GroqService:
                             "Focus on extracting these keywords directly from the user's narrative without inferring, assuming, or adding any information that was not explicitly mentioned by the user.\n"
                             "The report must be descriptive and structured as follows:\n"
                             f"1. **Title of the {scenario_type}**: {event_type}  - Provide a clear, concise title using the exact words provided by the user. Include the part of the body involved if mentioned. Do not add any inferred terms.\n"
-                            f"2. **Descriptive Summary**: Craft a detailed paragraph explaining the incident in a narrative form using only the user's words. Ensure the description is context-specific, including the time, location, and all individuals involved (e.g., resident:{resident_name}, Staff: {witness}, and any other people mentioned in the responses), actions taken, medical terms, and the part of the body involved in any injury if explicitly stated. **Do not infer any injuries, actions, or other details not explicitly stated by the user**.\n"
-                            "3. **Key Findings**: Summarize the main facts using only the user's responses. Extract key elements such as location, actions, individuals involved (resident, witness, and others), medical observations, and the part of the body injured. **Do not add or infer any details**. Bold important facts and findings.\n"
+                            f"2. **Descriptive Summary**: Craft a detailed paragraph explaining the incident in a narrative form using only the user's words. Ensure the description is context-specific, including the time, location, and all individuals involved (e.g., resident:{resident_name}, Staff: {staff}, and any other people mentioned in the responses), actions taken, medical terms, and the part of the body involved in any injury if explicitly stated. **Do not infer any injuries, actions, or other details not explicitly stated by the user**.\n"
+                            f"3. **Key Findings**: Summarize the main facts using only the user's responses. Extract key elements such as location, actions, individuals involved (resident:{resident_name}, staff:{staff}, and others), medical observations, and the part of the body injured. **Do not add or infer any details**. Bold important facts and findings.\n"
                             "4. **Action Taken**: Describe any actions taken based on the user's input. Highlight any immediate responses or follow-up actions, using only the actions described by the user. **Do not add any details that were not provided**.\n"
                             "5. **Don't censor sensitive or violent words**.\n"
                             "6. **Maintain Clarity**: Use professional language that directly reflects the event's seriousness or nature, ensuring that the title and report reflect the user's exact input without inferring any additional information.\n"
@@ -42,8 +42,8 @@ class GroqService:
                     {
                         "role": "user",
                         "content": (
-                            f"Please provide a summary of the following {scenario_type} involving {event_type},"
-                            f"Including Identifing individuals mentioned in the provided context:\n{combined_description}"
+                            f"Please provide a summary of the following {scenario_type} involving {event_type} for resident: {resident_name},"
+                            f"Including Identifing individuals mentioned from the provided context:\n{combined_description}"
                         )
                         
                     }
@@ -71,7 +71,7 @@ class GroqService:
                     {
                         "role": "system",
                         "content": (
-                            "You are an expert language model that checks, corrects grammatical errors, identifies proper nouns (like resident/patient/victim names, staff names, places) correctly "
+                            "You are an expert language model that checks, corrects grammatical errors, identifies names (like resident/patient/victim names, staff names, places) correctly "
                             "extracts time-related data (like time of events, dates, days), and converts sentences to past tense. You professionally handle all types of accident or incident reports, including those involving extreme violence or emergencies. "
                             "Follow these steps:\n\n"
                             "1. **Analyze the Sentence**: Carefully read the user response and identify any grammatical errors\n"
