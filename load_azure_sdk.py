@@ -127,7 +127,7 @@ def load_azure_synthetic_speech_sdk(text = "-", conversation_id = '-'):
                                     
                                     setTimeout(() => {
                                         fetch(`""" + os.getenv("VOICE_TRANSCRIPT_API_ENDPOINT") + """/set-is-speaking/?conversation_id=""" + conversation_id + """&is_speaking=false`);
-                                    }, (result.audioDuration / 10000) - (1000 * 2.5 ));
+                                    }, (result.audioDuration / 10000) - (1000 * 2.75 ));
                                 },
                                 error => {
                                     console.error("Error: ", error);
