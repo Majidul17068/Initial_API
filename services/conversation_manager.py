@@ -47,6 +47,7 @@ class ConversationManager:
 
         selct_resident="Please select resident from the list"
         self._add_message(conversation, "system", selct_resident, "system_message", "Q0")
+        self._add_message_db(conversation, "system", selct_resident, "system_message", "Q0")
         self.speech_service.synthesize_speech(selct_resident)
         
         # Call resident selection process here
@@ -85,6 +86,7 @@ class ConversationManager:
                 # Add the selected resident details to the conversation messages
                 selected_resident_message = f"Selected Resident: {conversation.resident_name}"
                 self._add_message(conversation, "user", selected_resident_message, "user", "Q0")
+                self._add_message_db(conversation, "user", selected_resident_message, "user", "Q0")
                 self.render_previous_conversation()
                 add_custom_css()
                 self._proceed_after_resident_selection(conversation_id)
@@ -162,10 +164,13 @@ class ConversationManager:
         prompt = "Did the event result in any physical injury or harm to a person (even if minor, like a scratch)? Please say 'yes' or 'no'."
         # prompt = 'yes or no'
         self._add_message(conversation, "system", prompt, "question", "Q0")
+        self._add_message_db(conversation, "system", prompt, "question", "Q0")
         self.speech_service.synthesize_speech(prompt)
         
         user_response = self.capture_user_response(15, skip_grammar_check=True)
         self._add_message(conversation, "user", user_response, "answer", "Q0")
+        self._add_message_db(conversation, "user", user_response, "answer", "Q0")
+        
 
         if "no" in user_response.lower():
             scenario_message = "Let's start with questions about the incident."
@@ -200,6 +205,8 @@ class ConversationManager:
 
         event_type_prompt = "Please select the type of event from the options below."
         self._add_message(conversation, "system", event_type_prompt, "question", "Q1")
+        self._add_message_db(conversation, "system", event_type_prompt, "question", "Q1")
+
         self.speech_service.synthesize_speech(event_type_prompt)
 
         # Set waiting_for_event_type_selection to True
@@ -290,6 +297,7 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         current_question = conversation.questions[conversation.current_question_index]
         self._add_message(conversation, "system", current_question, "question", f"Q{conversation.current_question_index + 1}")
+        self._add_message_db(conversation, "system", current_question, "question", f"Q{conversation.current_question_index + 1}")
         self.speech_service.synthesize_speech(current_question)
 
         while True:
@@ -315,6 +323,7 @@ class ConversationManager:
             if user_response:
                 conversation.responses[current_question] = user_response
                 self._add_message(conversation, "user", user_response, "answer", f"Q{conversation.current_question_index + 1}")
+                self._add_message_db(conversation, "user", user_response, "answer", f"Q{conversation.current_question_index + 1}")
                 break
 
             error_prompt = "I didn't catch that. Could you please repeat?"
@@ -388,6 +397,13 @@ class ConversationManager:
         if question_id:
             message["question_id"] = question_id
         conversation.messages.append(message)
+
+    def _add_message_db(self, conversation, sender, text, message_type, question_id=None):
+        message = {"sender": sender, "text": text, "timestamp": datetime.utcnow(), "message_type": message_type}
+        if question_id:
+            message["question_id"] = question_id
+        conversation.message_db.append(message)
+
         
     
     def display_status(self, type, message):
@@ -412,6 +428,7 @@ class ConversationManager:
             prompt = "Would you like to notify the manager with this event summary?"
             
         self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
+        self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message")
         self.speech_service.synthesize_speech(prompt)
         
         user_response = self.capture_user_response(15, skip_grammar_check=True)
@@ -424,6 +441,7 @@ class ConversationManager:
             response_text = "Manager hasn't been notified."
         
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
+        self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
         self.speech_service.synthesize_speech(response_text) 
         final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
         self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
@@ -462,13 +480,7 @@ class ConversationManager:
             self.render_previous_conversation()
             if "text_area_updated" not in st.session_state:
                 st.session_state['text_area_updated'] = st.session_state['recent_summary']
-            # st.text_area(
-            #     "Edit the summary:", 
-            #     value=st.session_state['text_area_updated'], 
-            #     key='Updated_Summary_TextArea',
-            #     height=500,
-            #     on_change=self.display_updated_summary
-            # )
+
             with st.form(key='summary_form'):
                 st.text_area(
                 "Edit the summary:", 
@@ -493,6 +505,7 @@ class ConversationManager:
         st.success("Summary updated successfully!")
         display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_Summary']}")
         self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_Summary'], "Updated Summary")
+        self._add_message_db(self.conversations[conversation_id], "user", st.session_state['Updated_Summary'], "Updated Summary")
         conversation.scenario_summary = st.session_state['Updated_Summary']
         updated_summary = True
         self.save_conversation_to_db(conversation_id)
@@ -526,7 +539,7 @@ class ConversationManager:
                 "event_type": conversation.event_type,
                 "reporting_agent_id": conversation.reporting_person_id,
                 "reporting_agent": conversation.reporting_person,
-                "messages": conversation.messages,
+                "messages": conversation.message_db,
                 "summary": conversation.scenario_summary,
                 "post_event_completed":conversation.post_event_completed,
                 "created_at": conversation.created_at,
