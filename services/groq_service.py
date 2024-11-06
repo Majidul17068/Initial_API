@@ -42,8 +42,8 @@ class GroqService:
                     {
                         "role": "user",
                         "content": (
-                            f"Please provide a summary of the following {scenario_type} involving {event_type} for resident: {resident_name},"
-                            f"Including Identifing individuals mentioned from the provided context:\n{combined_description}"
+                            f"Please provide a summary of the following {scenario_type} involving {event_type} for resident: {resident_name}"
+                            f"from the provided context:\n{combined_description}"
                         )
                         
                     }
