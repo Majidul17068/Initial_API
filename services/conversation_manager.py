@@ -54,8 +54,7 @@ class ConversationManager:
         if username in user_data:
             return user_data[username]
         else:
-            return "User not found."
-
+            return " "
     def create_new_conversation(self,conversation_id):
         """Creates a new conversation and assigns a unique ID."""
         self.conversations[conversation_id] = Conversation(conversation_id)
@@ -70,7 +69,7 @@ class ConversationManager:
         name = st.session_state.get("username","User")
         updated_name = self.get_user_data(name)
         
-        welcome_prompt = f"Hi {updated_name}, Welcome to the Care Home Incident and Accident Reporting System."
+        welcome_prompt = f"Hello {updated_name}, Welcome to the Care Home Incident and Accident Reporting System."
         self._add_message(conversation, "system", welcome_prompt, "system_message", "Q0")
         
         self.speech_service.synthesize_speech(welcome_prompt)

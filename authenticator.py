@@ -46,6 +46,7 @@ def check_password():
             # Clear session state and query parameters on logout
             st.session_state["password_correct"] = False
             st.query_params.clear()  # Clear all query parameters
+            del st.session_state["username"]
             st.rerun()
               # Refresh the page to reset state
             
