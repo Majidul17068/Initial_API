@@ -6,6 +6,7 @@ class Conversation:
         self.scenario_type = None
         self.questions = []
         self.current_question_index = -1
+        self.counter=1
         self.responses = {}
         self.scenario_summary = None
         self.updated_summary = None

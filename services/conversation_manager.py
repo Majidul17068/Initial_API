@@ -44,6 +44,7 @@ class ConversationManager:
         self._add_message(conversation, "system", welcome_prompt, "system_message", "Q0")
         
         self.speech_service.synthesize_speech(welcome_prompt)
+        time.sleep(1)
 
         selct_resident="Please select resident from the list"
         self._add_message(conversation, "system", selct_resident, "system_message", "Q0")
@@ -106,9 +107,11 @@ class ConversationManager:
         apology_prompt = f"I'm sorry to hear that there's been an event involving {conversation.resident_name}. Let's gather the details to ensure proper care and follow-up."
         self._add_message(conversation, "system", apology_prompt, "system_message")
         self.speech_service.synthesize_speech(apology_prompt)
+        time.sleep(1)
         
         # Proceed to the next step of asking scenario type
         add_custom_css()
+        time.sleep(1)
         self._ask_scenario_type(conversation_id)
 
     def fetch_residents(self):
@@ -163,31 +166,36 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         prompt = "Did the event result in any physical injury or harm to a person (even if minor, like a scratch)? Please say 'yes' or 'no'."
         # prompt = 'yes or no'
-        self._add_message(conversation, "system", prompt, "question", "Q0")
-        self._add_message_db(conversation, "system", prompt, "question", "Q0")
+        self._add_message(conversation, "system", prompt, "question", "Q1")
         self.speech_service.synthesize_speech(prompt)
         
         user_response = self.capture_user_response(15, skip_grammar_check=True)
-        self._add_message(conversation, "user", user_response, "answer", "Q0")
-        self._add_message_db(conversation, "user", user_response, "answer", "Q0")
+        self._add_message(conversation, "user", user_response, "answer", "Q1")
         
 
         if "no" in user_response.lower():
             scenario_message = "Let's start with questions about the incident."
             self.speech_service.synthesize_speech(scenario_message)
+            time.sleep(1)
             self._add_message(conversation, "system", scenario_message, "system_message")
+            self._add_message_db(conversation, "system", prompt, "question", "Q1")
+            self._add_message_db(conversation, "user", user_response, "answer", "Q1")
             self._initialize_conversation(conversation_id, "incident", incident_questions)
             
         elif "yes" in user_response.lower():
             scenario_message = "Let's start with questions about the accident."
             self.speech_service.synthesize_speech(scenario_message)
+            time.sleep(1)
             self._add_message(conversation, "system", scenario_message, "system_message")
+            self._add_message_db(conversation, "system", prompt, "question", "Q1")
+            self._add_message_db(conversation, "user", user_response, "answer", "Q1")
             self._initialize_conversation(conversation_id, "accident", accident_questions)
             
         else:
             error_prompt = "Please say 'yes' or 'no' to continue."
             self._add_message(conversation, "system", error_prompt, "system_message")
             self.speech_service.synthesize_speech(error_prompt)
+            time.sleep(1)
             self._ask_scenario_type(conversation_id)
 
     def _initialize_conversation(self, conversation_id, scenario_type, questions):
@@ -195,7 +203,7 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         conversation.scenario_type = scenario_type
         conversation.questions = questions
-        conversation.current_question_index = -1  
+        conversation.current_question_index = -1 
         event_type_options = [
             "Absconding", "Behaviour","Environmental","Fall","IPC related","Missing person","Medication","Near miss", "Physical Assault",
             "Self harm", "Skin integrity", "Others"
@@ -204,8 +212,8 @@ class ConversationManager:
         conversation.event_type_options = event_type_options
 
         event_type_prompt = "Please select the type of event from the options below."
-        self._add_message(conversation, "system", event_type_prompt, "question", "Q1")
-        self._add_message_db(conversation, "system", event_type_prompt, "question", "Q1")
+        self._add_message(conversation, "system", event_type_prompt, "question", "Q2")
+        self._add_message_db(conversation, "system", event_type_prompt, "question", "Q2")
 
         self.speech_service.synthesize_speech(event_type_prompt)
 
@@ -295,9 +303,11 @@ class ConversationManager:
     def ask_current_question(self, conversation_id):
         """Asks the current question and validates the response."""
         conversation = self.conversations.get(conversation_id)
+        
         current_question = conversation.questions[conversation.current_question_index]
         self._add_message(conversation, "system", current_question, "question", f"Q{conversation.current_question_index + 1}")
-        self._add_message_db(conversation, "system", current_question, "question", f"Q{conversation.current_question_index + 1}")
+        self._add_message_db(conversation, "system", current_question, "question", f"Q{ 3 + conversation.counter}")
+        conversation.counter=conversation.counter+1
         self.speech_service.synthesize_speech(current_question)
 
         while True:
@@ -323,7 +333,7 @@ class ConversationManager:
             if user_response:
                 conversation.responses[current_question] = user_response
                 self._add_message(conversation, "user", user_response, "answer", f"Q{conversation.current_question_index + 1}")
-                self._add_message_db(conversation, "user", user_response, "answer", f"Q{conversation.current_question_index + 1}")
+                self._add_message_db(conversation, "user", user_response, "answer", f"Q{ 3 + conversation.counter}")
                 break
 
             error_prompt = "I didn't catch that. Could you please repeat?"
@@ -399,7 +409,7 @@ class ConversationManager:
         conversation.messages.append(message)
 
     def _add_message_db(self, conversation, sender, text, message_type, question_id=None):
-        message = {"sender": sender, "text": text, "timestamp": datetime.utcnow(), "message_type": message_type}
+        message = {"sender": sender, "text": text,  "message_type": message_type}
         if question_id:
             message["question_id"] = question_id
         conversation.message_db.append(message)
@@ -421,6 +431,7 @@ class ConversationManager:
             
 
     def notify_manager(self, conversation_id, flag):
+        conversation = self.conversations.get(conversation_id)
         """Handles notifying the manager based on user response."""
         if flag:
             prompt = "Would you like me to notify the manager with updated summary?"
@@ -428,7 +439,7 @@ class ConversationManager:
             prompt = "Would you like to notify the manager with this event summary?"
             
         self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
-        self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message")
+        self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
         self.speech_service.synthesize_speech(prompt)
         
         user_response = self.capture_user_response(15, skip_grammar_check=True)
@@ -443,6 +454,7 @@ class ConversationManager:
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
         self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
         self.speech_service.synthesize_speech(response_text) 
+        time.sleep(1)
         final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
         self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
         self.speech_service.synthesize_speech(final_prompt)
