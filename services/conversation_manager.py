@@ -28,6 +28,33 @@ class ConversationManager:
         self.groq_service = GroqService()
         self.db_client = MongoDBClient()
         self.create_new_conversation(conversation_id)
+    
+
+    def get_user_data(self, username):
+        """
+        Returns the data associated with a username if the username exists in user_data.
+        
+        Args:
+            username (str): The username to look up in the dictionary.
+        
+        Returns:
+            str: The data associated with the username if found, or an error message if not.
+        """
+        user_data = {
+        "sibtain@langdalecarehomes.co.uk": "Sibtain",
+        "amaan@langdalecarehomes.co.uk": "Amaan",
+        "sajjad@langdalecarehomes.co.uk": "Sajjad",
+        "neemat@langdalecarehomes.co.uk" : "Neemat",
+        "zishan@langdalecarehomes.co.uk" : "Zishan",
+        "Sajib" : "Sajib",
+        "Lucalicata@test.com" : "Luca",
+        "Esteban@test.com" : "Esteban" }
+        
+        # Check if the username is a key in the dictionary
+        if username in user_data:
+            return user_data[username]
+        else:
+            return "User not found."
 
     def create_new_conversation(self,conversation_id):
         """Creates a new conversation and assigns a unique ID."""
@@ -40,7 +67,10 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         
         # Display the initial welcome prompt
-        welcome_prompt = f"Hi {conversation.reporting_person}, Welcome to the Care Home Incident and Accident Reporting System."
+        name = st.session_state.get("username","User")
+        updated_name = self.get_user_data(name)
+        
+        welcome_prompt = f"Hi {updated_name}, Welcome to the Care Home Incident and Accident Reporting System."
         self._add_message(conversation, "system", welcome_prompt, "system_message", "Q0")
         
         self.speech_service.synthesize_speech(welcome_prompt)
@@ -83,7 +113,6 @@ class ConversationManager:
                 selected_resident = resident_options[selected_resident_key]
                 conversation.resident_id = selected_resident['resident_id']
                 conversation.resident_name = selected_resident['resident_name']
-                resident_name=conversation.resident_name
                 # Add the selected resident details to the conversation messages
                 selected_resident_message = f"Selected Resident: {conversation.resident_name}"
                 self._add_message(conversation, "user", selected_resident_message, "user", "Q0")

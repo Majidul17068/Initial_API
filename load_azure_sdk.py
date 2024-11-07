@@ -29,7 +29,7 @@ def load_azure_speech_sdk(conversation_id = "-"):
 
                             let silenceTimer;
                             const silenceThreshold = 1000 * 2; //2 seconds
-                            const silenceThresholdFirstTime = 1000 * 10; //10 seconds
+                            const silenceThresholdFirstTime = 1000 * 5; //5 seconds
                             let thresholdNotReset = true;
                             let userResponse = null;
 
