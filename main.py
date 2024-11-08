@@ -111,7 +111,7 @@ def main():
     
     load_azure_speech_sdk()
     
-    st.sidebar.title("Care Home Incident and Accident Reporting System")
+    st.sidebar.title("Care Home Immediate Incident and Accident Reporting System")
     st.sidebar.image("Langdalelogo.png", caption="Care Home AI Agent", width=200)
     add_custom_css()
 
