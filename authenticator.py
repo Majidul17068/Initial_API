@@ -11,7 +11,7 @@ def check_password():
 
     def login_form():
         """Form with widgets to collect user information."""
-        st.title("Care Home Post Incident and Accident Reporting System")
+        st.title("Care Home Immediate Incident and Accident Reporting System")
         st.sidebar.image("Langdalelogo.png", caption="Care Home AI Agent", width=200)
         
         with st.form("Credentials"):
@@ -46,7 +46,7 @@ def check_password():
             # Clear session state and query parameters on logout
             st.session_state["password_correct"] = False
             st.query_params.clear()  # Clear all query parameters
-            del st.session_state["username"]
+            
             st.rerun()
               # Refresh the page to reset state
             
