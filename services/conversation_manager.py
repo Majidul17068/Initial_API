@@ -340,6 +340,28 @@ class ConversationManager:
 
         while True:
             user_response = self.capture_user_response(120, skip_grammar_check=False)
+            
+            if current_question == "Please provide details of the event":
+                # Analyze the event for injury risk
+                analysis_result = self.groq_service.event_analysis(user_response)
+            
+                # Store the analysis results in the conversation object
+                conversation.injury_analysis = analysis_result
+                
+                # Prepare the analysis message
+                status_level = "warning" if analysis_result['has_injury'] else "info"
+                analysis_message = (
+                    f"Injury Risk Analysis:\n"
+                    f"{'⚠️ Physical injury is possible \n' if analysis_result['has_injury'] else '✓ No significant injury risk detected \n'}\n"
+                    f"Risk Level: {analysis_result['likelihood']}%\n"
+                    f"Assessment: {analysis_result['reasoning']}"
+                )
+                
+                # Display analysis results
+                self._add_message(conversation, status_level, analysis_message, "analysis")
+                self.display_status(status_level, analysis_message)
+                self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
+            
             if current_question.lower() == "when did the event happen?" and not self.validate_response_time(user_response):
                 error_invalid_time = "Please include a specific time, such as '3 pm', 'yesterday', or 'last night'."
                 self._add_message(conversation, "system", error_invalid_time, "system_message")

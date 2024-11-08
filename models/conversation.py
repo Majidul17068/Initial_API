@@ -20,5 +20,6 @@ class Conversation:
         self.summary_edited = False
         self.waiting_for_event_type_selection = False
         self.post_event_completed=False
+        self.injury_analysis = None
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()

@@ -127,3 +127,71 @@ class GroqService:
             # Handle exceptions appropriately
             print(f"An error occurred: {e}")
             return ""
+        
+        
+        
+    def event_analysis(self, event_details: str) -> dict:
+        """
+        Analyzes the event details to determine the possibility and likelihood of physical injury.
+        
+        Args:
+            event_details (str): The detailed description of the event
+            
+        Returns:
+            dict: Contains:
+                - has_injury (bool): True if injury is possible, False if not
+                - likelihood (float): Percentage likelihood of injury (0-100)
+                - reasoning (str): Detailed explanation of the assessment
+        """
+        try:
+            response = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an expert in healthcare and injury risk assessment. Your task is to analyze the event "
+                            "description and provide a structured assessment of injury risk with exactly three components:\n"
+                            "\n1. A boolean (true/false) indicating if physical injury is possible from this event"
+                            "\n2. A numerical percentage (0-100) indicating the likelihood of injury"
+                            "\n3. A clear explanation of your reasoning (2-3 sentences maximum)\n"
+                            "\nProvide your response in this exact format:\n"
+                            "Injury Possible: [true/false]\n"
+                            "Likelihood: [number]%\n"
+                            "Reasoning: [your explanation]\n"
+                            "\nBase your assessment on:\n"
+                            "- Force or impact described\n"
+                            "- Body parts involved\n"
+                            "- Vulnerability factors\n"
+                            "- Immediate symptoms mentioned"
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this event description: {event_details}"
+                    }
+                ],
+                model="llama-3.1-70b-versatile",
+                temperature=0.1
+            )
+
+            analysis_text = response.choices[0].message.content.strip()
+            
+            # Parse the response using string manipulation
+            lines = analysis_text.split('\n')
+            injury_possible = 'true' in lines[0].lower()
+            likelihood = float(lines[1].split(':')[1].strip().rstrip('%'))
+            reasoning = lines[2].split(':')[1].strip()
+
+            return {
+                "has_injury": injury_possible,
+                "likelihood": likelihood,
+                "reasoning": reasoning
+            }
+
+        except Exception as e:
+            print(f"Error in event analysis: {e}")
+            return {
+                "has_injury": True,  # Default to True for safety
+                "likelihood": 50.0,  # Default to medium likelihood
+                "reasoning": "Error in analysis - defaulting to cautionary assessment"
+            }
