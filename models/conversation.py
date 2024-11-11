@@ -10,6 +10,7 @@ class Conversation:
         self.responses = {}
         self.scenario_summary = None
         self.updated_summary = None
+        self.updated_conversation = None
         self.messages = []
         self.message_db=[]
         self.witness=None
