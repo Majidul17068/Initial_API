@@ -132,14 +132,14 @@ class GroqService:
         
     def event_analysis(self, event_details: str) -> dict:
         """
-        Analyzes the event details to determine the possibility and likelihood of physical injury.
+        Analyzes the event details to determine if there is any possibility of physical injury.
         
         Args:
             event_details (str): The detailed description of the event
             
         Returns:
             dict: Contains:
-                - has_injury (bool): True if injury is possible, False if not
+                - has_injury (bool): True if there's any chance of physical injury, False if not
                 - likelihood (float): Percentage likelihood of injury (0-100)
                 - reasoning (str): Detailed explanation of the assessment
         """
@@ -150,24 +150,32 @@ class GroqService:
                         "role": "system",
                         "content": (
                             "You are an expert in healthcare and injury risk assessment. Your task is to analyze the event "
-                            "description and provide a structured assessment of injury risk with exactly three components:\n"
-                            "\n1. A boolean (true/false) indicating if physical injury is possible from this event"
+                            "description and determine if there is ANY POSSIBILITY of physical injury from the described event. "
+                            "Return true if there's any chance of physical injury, and false only if there's no possibility of physical injury.\n\n"
+                            "Provide a structured assessment with exactly three components:\n"
+                            "\n1. A boolean (true/false) where:"
+                            "\n   - TRUE: if there's any possibility of physical injury (even minor)"
+                            "\n   - FALSE: only if there's absolutely no chance of physical injury"
                             "\n2. A numerical percentage (0-100) indicating the likelihood of injury"
                             "\n3. A clear explanation of your reasoning (2-3 sentences maximum)\n"
                             "\nProvide your response in this exact format:\n"
                             "Injury Possible: [true/false]\n"
                             "Likelihood: [number]%\n"
                             "Reasoning: [your explanation]\n"
-                            "\nBase your assessment on:\n"
-                            "- Force or impact described\n"
-                            "- Body parts involved\n"
-                            "- Vulnerability factors\n"
-                            "- Immediate symptoms mentioned"
+                            "\nExamples:"
+                            "\nScenario 1: 'Resident fell from bed' -> TRUE (possibility of injury exists)"
+                            "\nScenario 2: 'Resident was found wandering in corridor' -> FALSE (no injury possibility)\n"
+                            "\nBase your assessment on:"
+                            "\n- Any physical contact or impact"
+                            "\n- Any falls or near-falls"
+                            "\n- Any aggressive physical behavior"   
+                            "\n- Any use of force or physical strain"
+                            "\n- Any physical symptoms mentioned"
                         )
                     },
                     {
                         "role": "user",
-                        "content": f"Please analyze this event description: {event_details}"
+                        "content": f"Please analyze this event description for any possibility of physical injury: {event_details}"
                     }
                 ],
                 model="llama-3.1-70b-versatile",
