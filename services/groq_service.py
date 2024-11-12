@@ -7,17 +7,19 @@ class GroqService:
  
     def summarize_scenario(
         self, 
-        responses: dict,
+        responses,
         resident_name: str, 
         scenario_type: str, 
         event_type: str, 
         staff: str
     ) -> str:
         try:
-            # Combine the provided Q&A responses into a description
             combined_description = f"This is a report about a {scenario_type}.\n"
-            for i, (question, answer) in enumerate(responses.items(), start=1):
-                combined_description += f"{i}. {question}: {answer}\n"
+            if type(responses)== dict:
+                for i, (question, answer) in enumerate(responses.items(), start=1):
+                    combined_description += f"{i}. {question}: {answer}\n"
+            else:
+                combined_description = combined_description + responses
 
             # Generate the summary response
             response = self.client.chat.completions.create(

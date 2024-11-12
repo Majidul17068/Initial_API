@@ -322,9 +322,9 @@ class ConversationManager:
         conversation.current_question_index += 1
         if conversation.current_question_index == len(conversation.questions):
             self.finalize_conversation(conversation_id)
-            time.sleep(10)
-            updated_summary_flag = False
-            self.notify_manager(conversation_id, updated_summary_flag)
+            
+            #updated_summary_flag = False
+            #self.notify_manager(conversation_id, updated_summary_flag)
             return
         self.ask_current_question(conversation_id)
 
@@ -490,48 +490,135 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
-
-        with st.spinner("Processing the event summary..."):
-            summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
-            conversation.messages.append({
-                "sender": "system",
-                "text": summary_prompt,
-                "timestamp": datetime.utcnow(),
-                "message_type": "system_message"
-            })
-            self.speech_service.synthesize_speech(summary_prompt)
-
-            display_chat_message(is_user=False, message_text=f"{summary}")
-
-            conversation.scenario_summary = summary
-            conversation.updated_at = datetime.utcnow()
+        #================================================================
+        asking_edit_response = "Would you like to edit any of your response?"
         
-        if "Current_Summary" not in st.session_state:
-            st.session_state['Current_Summary'] = conversation.scenario_summary
+        self.speech_service.synthesize_speech(asking_edit_response)
+        
+        edit_summary_response = self.capture_user_response(15, skip_grammar_check=True)
+        if "yes" in edit_summary_response.lower():
+            retrived_conversation = []
+            for message in conversation.messages:
+                if(message['sender'] in ('user', 'system')):
+                    retrived_conversation.append(f"**{message['sender'].upper()}** : {message['text']}")
             
-        st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
-        
-        def update_summary(summary):
-            if "recent_summary" not in st.session_state:
-                st.session_state['recent_summary'] = summary
-            if "Updated_Summary" not in st.session_state:
-                st.session_state['Updated_Summary'] = ''
-            self.render_previous_conversation()
-            if "text_area_updated" not in st.session_state:
-                st.session_state['text_area_updated'] = st.session_state['recent_summary']
-
-            with st.form(key='summary_form'):
-                st.text_area(
-                "Edit the summary:", 
-                value=st.session_state['text_area_updated'], 
-                key='Updated_Summary_TextArea',
-                height=500
-                )
-                st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
+            message_text='\n\n'.join(retrived_conversation)
+            display_chat_message(is_user=False, message_text=f"{message_text}")
+            if "Current_message" not in st.session_state:
+                st.session_state['Current_message'] = message_text
             
-        self.save_conversation_to_db(conversation_id)
-        
+            st.button("Edit reponse", on_click=lambda: update_response())
+            def update_response():
+                self.render_previous_conversation()
+                add_custom_css()
+                with st.form(key='Response_form'):
+                    st.text_area(
+                    "Edit the response:", 
+                    value=st.session_state['Current_message'], 
+                    key='Updated_response_TextArea',
+                    height=500
+                    )
+                    st.form_submit_button(label='Update Response', on_click=lambda: display_updated_response())
+                    def display_updated_response():
+                        selected_event_results = st.session_state.get('Updated_response_TextArea')
+                        st.session_state['Updated_response_TextArea'] = selected_event_results
+                        add_custom_css()
+                        self.render_previous_conversation()
+                        st.success("Response updated successfully!")
+                        display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_response_TextArea']}")
+                        self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_response_TextArea'], "Updated Response Text")
+                        conversation.updated_conversation = st.session_state['Updated_response_TextArea']
+                        summary = self.groq_service.summarize_scenario(st.session_state['Updated_response_TextArea'], conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
+
+                        with st.spinner("Processing the event summary..."):
+                            summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+                            conversation.messages.append({
+                                "sender": "system",
+                                "text": summary_prompt,
+                                "timestamp": datetime.utcnow(),
+                                "message_type": "system_message"
+                            })
+                            self.speech_service.synthesize_speech(summary_prompt)
+
+                            display_chat_message(is_user=False, message_text=f"{summary}")
+
+                            conversation.scenario_summary = summary
+                            
+                            
+                            conversation.updated_at = datetime.utcnow()
+                        
+                        if "Current_Summary" not in st.session_state:
+                            st.session_state['Current_Summary'] = conversation.scenario_summary
+                            
+                        st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
+                        updated_summary_flag = False
+                        time.sleep(10)
+                        self.notify_manager(conversation_id, updated_summary_flag)
+                            
+                        def update_summary(summary):
+                            if "recent_summary" not in st.session_state:
+                                st.session_state['recent_summary'] = summary
+                            if "Updated_Summary" not in st.session_state:
+                                st.session_state['Updated_Summary'] = ''
+                            self.render_previous_conversation()
+                            if "text_area_updated" not in st.session_state:
+                                st.session_state['text_area_updated'] = st.session_state['recent_summary']
+
+                            with st.form(key='summary_form'):
+                                st.text_area(
+                                "Edit the summary:", 
+                                value=st.session_state['text_area_updated'], 
+                                key='Updated_Summary_TextArea',
+                                height=500
+                                )
+                                st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
+                        self.save_conversation_to_db(conversation_id)
+        else:
+            summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
+
+            with st.spinner("Processing the event summary..."):
+                summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+                conversation.messages.append({
+                    "sender": "system",
+                    "text": summary_prompt,
+                    "timestamp": datetime.utcnow(),
+                    "message_type": "system_message"
+                })
+                self.speech_service.synthesize_speech(summary_prompt)
+
+                display_chat_message(is_user=False, message_text=f"{summary}")
+
+                conversation.scenario_summary = summary
+                conversation.updated_at = datetime.utcnow()
+            
+            if "Current_Summary" not in st.session_state:
+                st.session_state['Current_Summary'] = conversation.scenario_summary
+                
+            st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
+            
+            def update_summary(summary):
+                if "recent_summary" not in st.session_state:
+                    st.session_state['recent_summary'] = summary
+                if "Updated_Summary" not in st.session_state:
+                    st.session_state['Updated_Summary'] = ''
+                self.render_previous_conversation()
+                if "text_area_updated" not in st.session_state:
+                    st.session_state['text_area_updated'] = st.session_state['recent_summary']
+
+                with st.form(key='summary_form'):
+                    st.text_area(
+                    "Edit the summary:", 
+                    value=st.session_state['text_area_updated'], 
+                    key='Updated_Summary_TextArea',
+                    height=500
+                    )
+                    st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
+            self.save_conversation_to_db(conversation_id)
+            time.sleep(10)
+            updated_summary_flag = False
+            self.notify_manager(conversation_id, updated_summary_flag)
+          
+        #============================================================================ 
 
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""
@@ -580,6 +667,7 @@ class ConversationManager:
                 "reporting_agent_id": conversation.reporting_person_id,
                 "reporting_agent": conversation.reporting_person,
                 "messages": conversation.message_db,
+                "Updated_Reponse": conversation.updated_conversation,
                 "summary": conversation.scenario_summary,
                 "post_event_completed":conversation.post_event_completed,
                 "created_at": conversation.created_at,

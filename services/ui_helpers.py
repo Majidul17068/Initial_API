@@ -39,8 +39,8 @@ def add_custom_css():
     )
 
 def display_chat_message(is_user, message_text):
-    avatar_bot = "https://www.w3schools.com/howto/img_avatar.png"
-    avatar_user = "https://www.w3schools.com/howto/img_avatar2.png"
+    avatar_bot = "https://www.w3schools.com/howto/img_avatar2.png"
+    avatar_user = "https://www.w3schools.com/howto/img_avatar.png"
 
     if is_user:
         st.markdown(f"""
