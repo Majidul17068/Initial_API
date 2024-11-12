@@ -322,9 +322,9 @@ class ConversationManager:
         conversation.current_question_index += 1
         if conversation.current_question_index == len(conversation.questions):
             self.finalize_conversation(conversation_id)
-            time.sleep(10)
-            updated_summary_flag = False
-            self.notify_manager(conversation_id, updated_summary_flag)
+            
+            #updated_summary_flag = False
+            #self.notify_manager(conversation_id, updated_summary_flag)
             return
         self.ask_current_question(conversation_id)
 
@@ -543,13 +543,18 @@ class ConversationManager:
                             display_chat_message(is_user=False, message_text=f"{summary}")
 
                             conversation.scenario_summary = summary
+                            
+                            
                             conversation.updated_at = datetime.utcnow()
                         
                         if "Current_Summary" not in st.session_state:
                             st.session_state['Current_Summary'] = conversation.scenario_summary
                             
                         st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
-                        
+                        updated_summary_flag = False
+                        time.sleep(10)
+                        self.notify_manager(conversation_id, updated_summary_flag)
+                            
                         def update_summary(summary):
                             if "recent_summary" not in st.session_state:
                                 st.session_state['recent_summary'] = summary
@@ -567,7 +572,7 @@ class ConversationManager:
                                 height=500
                                 )
                                 st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-                        
+                        self.save_conversation_to_db(conversation_id)
         else:
             summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
@@ -608,8 +613,12 @@ class ConversationManager:
                     height=500
                     )
                     st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-            
-        
+            self.save_conversation_to_db(conversation_id)
+            time.sleep(10)
+            updated_summary_flag = False
+            self.notify_manager(conversation_id, updated_summary_flag)
+          
+        #============================================================================ 
 
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""
