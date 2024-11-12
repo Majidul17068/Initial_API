@@ -323,9 +323,9 @@ class ConversationManager:
         conversation.current_question_index += 1
         if conversation.current_question_index == len(conversation.questions):
             self.finalize_conversation(conversation_id)
-            time.sleep(10)
-            updated_summary_flag = False
-            self.notify_manager(conversation_id, updated_summary_flag)
+            
+            #updated_summary_flag = False
+            #self.notify_manager(conversation_id, updated_summary_flag)
             return
         self.ask_current_question(conversation_id)
 
@@ -350,12 +350,13 @@ class ConversationManager:
                 # Store the responses and analysis
                 conversation.responses[current_question] = user_response
                 conversation.injury_analysis = analysis_result
+                conversation.scenario_type=analysis_result['classification']
                 
                 # Prepare the analysis message
                 status_level = "warning" if analysis_result['has_injury'] else "info"
                 analysis_message = (
                     f"📋 Event Classification.\n\n"
-                    f"📋 Based on the event details it can be classified as {'🚨 Accident' if analysis_result['classification'] == 'accident' else '⚡ Incident'}\n\n"
+                    f"📋 Based on the event details it can be classified as {'🚨 Accident' if analysis_result['classification'] == 'accident' else '⚡ Incident\n'}\n"
                     f"Reasoning: {analysis_result['classification_reason']}\n\n"
                     f"🏥 Injury Risk Analysis:\n\n"
                     f"{'⚠️ From the event details there is a high chance of physical injury\n' if analysis_result['has_injury'] else '✓ No significant injury risk detected\n'}\n"
@@ -366,8 +367,10 @@ class ConversationManager:
                 
                 # Display analysis results
                 self._add_message(conversation, "user", user_response, "answer")
-                self._add_message(conversation, "warning", analysis_message, "analysis")
-                self.display_status(status_level, analysis_message)
+                #self._add_message(conversation, status_level, analysis_message, "answer")
+                self.display_status("warning",analysis_message)
+                #self.display_status(status_level, analysis_message)
+                #display_chat_message(status_level, analysis_message)
                 self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
 
                 # Handle injury assessment flow
@@ -680,13 +683,18 @@ class ConversationManager:
                             display_chat_message(is_user=False, message_text=f"{summary}")
 
                             conversation.scenario_summary = summary
+                            
+                            
                             conversation.updated_at = datetime.utcnow()
                         
                         if "Current_Summary" not in st.session_state:
                             st.session_state['Current_Summary'] = conversation.scenario_summary
                             
                         st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
-                        
+                        updated_summary_flag = False
+                        time.sleep(10)
+                        self.notify_manager(conversation_id, updated_summary_flag)
+                            
                         def update_summary(summary):
                             if "recent_summary" not in st.session_state:
                                 st.session_state['recent_summary'] = summary
@@ -704,7 +712,7 @@ class ConversationManager:
                                 height=500
                                 )
                                 st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-                        
+                        self.save_conversation_to_db(conversation_id)
         else:
             summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
@@ -745,8 +753,12 @@ class ConversationManager:
                     height=500
                     )
                     st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-            
-        
+            self.save_conversation_to_db(conversation_id)
+            time.sleep(10)
+            updated_summary_flag = False
+            self.notify_manager(conversation_id, updated_summary_flag)
+          
+        #============================================================================ 
 
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""

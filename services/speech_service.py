@@ -102,7 +102,7 @@ class SpeechService:
         while self.is_recognizing and (full_text == "" or full_text is not None):
             time.sleep(0.25)  # Call the function every second
             ut = fetch_user_transcript(self.conversation_id)
-            print('api call: ', ut)
+            #print('api call: ', ut)
             full_text = ut['text']
             if full_text != "":
                 self.recognized_callback(full_text)
@@ -148,7 +148,7 @@ class SpeechService:
         while is_speaking:
             time.sleep(2)  # Call the function every second
             ut = fetch_is_speaking(self.conversation_id)
-            print('api call: ', ut)
+            #print('api call: ', ut)
             is_speaking = ut['is_speaking']
             if not is_speaking:
                 break
