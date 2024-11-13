@@ -380,6 +380,7 @@ class ConversationManager:
                     if analysis_result['injury_mentioned']:
                         # If injury is directly mentioned, go straight to size and location
                         print("Injury mentioned in details, proceeding to size/location questions")
+                        self._add_message(conversation, "user", user_response, "answer")
                         self._ask_injury_details(conversation_id)
                         return  # Stop here and wait for injury details
                     else:
