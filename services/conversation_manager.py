@@ -338,7 +338,7 @@ class ConversationManager:
         self._add_message_db(conversation, "system", current_question, "question", f"Q{3 + conversation.counter}")
         conversation.counter = conversation.counter + 1
         self.speech_service.synthesize_speech(current_question)
-
+        cnt=0
         while True:
             user_response = self.capture_user_response(120, skip_grammar_check=False)
             
@@ -376,6 +376,7 @@ class ConversationManager:
 
                 # Handle injury assessment flow
                 if analysis_result['has_injury']:
+                    print(cnt+1)
                     if analysis_result['injury_mentioned']:
                         # If injury is directly mentioned, go straight to size and location
                         print("Injury mentioned in details, proceeding to size/location questions")
@@ -396,8 +397,6 @@ class ConversationManager:
                         if "yes" in injury_response.lower():
                             # If injury confirmed, proceed to size and location
                             print("Injury confirmed, proceeding to size/location questions")
-                            conversation.scenario_type = "accident"
-                            self.display_status("info","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
                             self._ask_injury_details(conversation_id)
                             return  # Stop here and wait for injury details
                 
@@ -457,6 +456,8 @@ class ConversationManager:
     def _ask_injury_details(self, conversation_id):
         """Handles the injury size and location questions."""
         conversation = self.conversations.get(conversation_id)
+        self.display_status("warning","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
+        conversation.scenario_type = "accident"
         
         # Set state for injury size selection if not already set
         if 'injury_size_selected' not in st.session_state:
