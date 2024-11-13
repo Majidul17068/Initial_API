@@ -366,6 +366,7 @@ class ConversationManager:
                 )
                 
                 # Display analysis results
+                time.sleep(3)
                 self._add_message(conversation, "user", user_response, "answer")
                 #self._add_message(conversation, status_level, analysis_message, "answer")
                 self.display_status("warning",analysis_message)
@@ -387,6 +388,7 @@ class ConversationManager:
                         self._add_message(conversation, "system", injury_question, "question")
                         self.speech_service.synthesize_speech(injury_question)
                         
+                        
                         injury_response = self.capture_user_response(15, skip_grammar_check=True)
                         self._add_message(conversation, "user", injury_response, "answer")
                         self._add_message_db(conversation, "user", injury_response, "answer", f"Q{3 + conversation.counter}")
@@ -394,6 +396,8 @@ class ConversationManager:
                         if "yes" in injury_response.lower():
                             # If injury confirmed, proceed to size and location
                             print("Injury confirmed, proceeding to size/location questions")
+                            conversation.scenario_type = "accident"
+                            self.display_status("info","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
                             self._ask_injury_details(conversation_id)
                             return  # Stop here and wait for injury details
                 
