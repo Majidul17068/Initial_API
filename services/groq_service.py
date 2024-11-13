@@ -169,6 +169,8 @@ class GroqService:
                             "Injury Mentioned: [true/false]\n"
                             "Mention Details: [what injury-related terms were found, or 'None found']\n"
                             "Classification: [INCIDENT/ACCIDENT]\n"
+                            "   - If there is any injury/physical injury classified as accident"
+                            "   - If there any no injury classified as accident"
                             "Classification Reason: [brief explanation]\n\n"
                             "Examples:\n"
                             "'Resident fell and has a bruise' -> Injury Mentioned: true (explicit mention of bruise)\n"

@@ -286,8 +286,8 @@ class ConversationManager:
 
         for email, manager_name in recipient_info.items():
             # Set dynamic data for the email, including the personalized manager name
-            dynamic_data = base_dynamic_data.copy()  # Copy the base data to avoid overwriting
-            dynamic_data['manager_name'] = manager_name  # Personalize manager name
+            dynamic_data = base_dynamic_data.copy()  
+            dynamic_data['manager_name'] = manager_name  
 
             # Create the email message and assign the template ID
             message = Mail(
@@ -368,38 +368,28 @@ class ConversationManager:
                 # Display analysis results
                 time.sleep(3)
                 self._add_message(conversation, "user", user_response, "answer")
-                #self._add_message(conversation, status_level, analysis_message, "answer")
                 self.display_status("warning",analysis_message)
-                #self.display_status(status_level, analysis_message)
-                #display_chat_message(status_level, analysis_message)
                 self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
 
                 # Handle injury assessment flow
                 if analysis_result['has_injury']:
                     print(cnt+1)
                     if analysis_result['injury_mentioned']:
-                        # If injury is directly mentioned, go straight to size and location
-                        print("Injury mentioned in details, proceeding to size/location questions")
-                        self._add_message(conversation, "user", user_response, "answer")
                         self._ask_injury_details(conversation_id)
-                        return  # Stop here and wait for injury details
+                        return 
                     else:
                         # If injury risk but not mentioned, ask for confirmation
-                        print("Injury risk detected but not mentioned, asking for confirmation")
                         injury_question = "Did the patient sustain a physical injury as a result of the event?"
                         self._add_message(conversation, "system", injury_question, "question")
                         self.speech_service.synthesize_speech(injury_question)
                         
-                        
                         injury_response = self.capture_user_response(15, skip_grammar_check=True)
-                        self._add_message(conversation, "user", injury_response, "answer")
                         self._add_message_db(conversation, "user", injury_response, "answer", f"Q{3 + conversation.counter}")
+                        self._add_message(conversation, "user", injury_response, "answer")
                         
                         if "yes" in injury_response.lower():
-                            # If injury confirmed, proceed to size and location
-                            print("Injury confirmed, proceeding to size/location questions")
                             self._ask_injury_details(conversation_id)
-                            return  # Stop here and wait for injury details
+                            return 
                 
                 # If no injury risk or injury not confirmed, continue with next question
                 self.proceed_to_next_question(conversation_id)
@@ -459,7 +449,6 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         self.display_status("warning","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
         conversation.scenario_type = "accident"
-        
         # Set state for injury size selection if not already set
         if 'injury_size_selected' not in st.session_state:
             st.session_state['injury_size_selected'] = False
@@ -491,7 +480,7 @@ class ConversationManager:
                 key='selected_injury_size',
                 on_change=on_size_change
             )
-            return  # Important to return here to wait for selection
+            return 
             
     def _ask_injury_location(self, conversation_id):
         """Handle injury location question with speech capture."""
@@ -636,7 +625,7 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        #================================================================
+
         asking_edit_response = "Would you like to edit any of your response?"
         
         self.speech_service.synthesize_speech(asking_edit_response)
@@ -764,7 +753,6 @@ class ConversationManager:
             updated_summary_flag = False
             self.notify_manager(conversation_id, updated_summary_flag)
           
-        #============================================================================ 
 
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""
