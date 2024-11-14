@@ -140,7 +140,8 @@ class ConversationManager:
         # Proceed to the next step of asking scenario type
         add_custom_css()
         time.sleep(1)
-        self._ask_scenario_type(conversation_id)
+        #self._ask_scenario_type(conversation_id)
+        self._initialize_conversation(conversation_id, "incident", incident_questions)
 
     def fetch_residents(self):
         """
@@ -285,8 +286,8 @@ class ConversationManager:
 
         for email, manager_name in recipient_info.items():
             # Set dynamic data for the email, including the personalized manager name
-            dynamic_data = base_dynamic_data.copy()  # Copy the base data to avoid overwriting
-            dynamic_data['manager_name'] = manager_name  # Personalize manager name
+            dynamic_data = base_dynamic_data.copy()  
+            dynamic_data['manager_name'] = manager_name  
 
             # Create the email message and assign the template ID
             message = Mail(
@@ -334,34 +335,60 @@ class ConversationManager:
         
         current_question = conversation.questions[conversation.current_question_index]
         self._add_message(conversation, "system", current_question, "question", f"Q{conversation.current_question_index + 1}")
-        self._add_message_db(conversation, "system", current_question, "question", f"Q{ 3 + conversation.counter}")
-        conversation.counter=conversation.counter+1
+        self._add_message_db(conversation, "system", current_question, "question", f"Q{3 + conversation.counter}")
+        conversation.counter = conversation.counter + 1
         self.speech_service.synthesize_speech(current_question)
-
+        
         while True:
             user_response = self.capture_user_response(120, skip_grammar_check=False)
+            
+            if current_question == "Please provide details of the event":
+                # Analyze the event for injury risk
+                analysis_result = self.groq_service.event_analysis(user_response)
+                
+                conversation.responses[current_question] = user_response
+                conversation.injury_analysis = analysis_result
+                conversation.scenario_type = analysis_result['classification']
+                
+                status_level = "warning" if analysis_result['has_injury'] else "info"
+                analysis_message = (
+                    f"📋 Event Classification.\n\n"
+                    f"📋 Based on the event details it can be classified as {'🚨 Accident' if analysis_result['classification'] == 'accident' else '⚡ Incident\n'}\n"
+                    f"Reasoning: {analysis_result['classification_reason']}\n\n"
+                    f"🏥 Injury Risk Analysis:\n\n"
+                    f"{'⚠️ From the event details there is a high chance of physical injury\n' if analysis_result['has_injury'] else '✓ No significant injury risk detected\n'}\n"
+                    f"Risk Level: {analysis_result['likelihood']}%\n\n"
+                    f"Assessment: {analysis_result['reasoning']}\n\n"
+                )
+                
+                # Display analysis results
+                time.sleep(3)
+                self._add_message(conversation, "user", user_response, "answer")
+                self.display_status("warning", analysis_message)
+                self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
+                
+                if analysis_result['has_injury']:
+                    if analysis_result['injury_mentioned']:
+                        self._ask_injury_size(conversation_id)
+                    else:
+                        self._ask_injury_confirmation(conversation_id)
+                    return
+                
+                self.proceed_to_next_question(conversation_id)
+                return
+
+            # Regular question handling remains the same
             if current_question.lower() == "when did the event happen?" and not self.validate_response_time(user_response):
                 error_invalid_time = "Please include a specific time, such as '3 pm', 'yesterday', or 'last night'."
                 self._add_message(conversation, "system", error_invalid_time, "system_message")
                 self.speech_service.synthesize_speech(error_invalid_time)
                 continue
             
-            if self.needs_validation_location(current_question) and self.validate_response_location(user_response):
-                error_prompt_location = "Please specify a location or place."
-                self._add_message(conversation, "system", error_prompt_location, "system_message")
-                self.speech_service.synthesize_speech(error_prompt_location)
-                continue
-
-            if self.needs_validation_informed(current_question) and not self.validate_response_name_date(current_question,user_response):
-                error_prompt_informed = "Please include a date and name of the person who was informed (for example: We informed the resident's son, Mark on 24th of October 2024 at 15:35)"
-                self._add_message(conversation, "system", error_prompt_informed, "system_message")
-                self.speech_service.synthesize_speech(error_prompt_informed)
-                continue
 
             if user_response:
                 conversation.responses[current_question] = user_response
                 self._add_message(conversation, "user", user_response, "answer", f"Q{conversation.current_question_index + 1}")
-                self._add_message_db(conversation, "user", user_response, "answer", f"Q{ 3 + conversation.counter}")
+                self._add_message_db(conversation, "user", user_response, "answer", f"Q{3 + conversation.counter}")
                 break
 
             error_prompt = "I didn't catch that. Could you please repeat?"
@@ -369,6 +396,121 @@ class ConversationManager:
             self.speech_service.synthesize_speech(error_prompt)
 
         self.proceed_to_next_question(conversation_id)
+        
+    def _ask_injury_confirmation(self, conversation_id):
+        """Ask if patient sustained physical injury"""
+        conversation = self.conversations.get(conversation_id)
+        
+        injury_question = "Did the patient sustain a physical injury as a result of the event?"
+        self._add_message(conversation, "system", injury_question, "question")
+        self.speech_service.synthesize_speech(injury_question)
+        
+        injury_response = self.capture_user_response(15, skip_grammar_check=True)
+        self._add_message(conversation, "user", injury_response, "answer")
+        self._add_message_db(conversation, "user", injury_response, "answer", f"Q{3 + conversation.counter}")
+        
+        if "yes" in injury_response.lower():
+            conversation.scenario_type = "accident"
+            self.display_status("warning", "Based on the injury, this event will be classified as an accident.")
+            self._ask_injury_size(conversation_id)
+        else:
+            self.proceed_to_next_question(conversation_id)
+            
+    def _ask_injury_size(self, conversation_id):
+        """Ask about injury size using selectbox"""
+        conversation = self.conversations.get(conversation_id)
+        
+        if 'injury_size_selected' not in st.session_state:
+            st.session_state['injury_size_selected'] = False
+            
+        def on_size_change():
+            selected_size = st.session_state.get('selected_injury_size')
+            if selected_size:
+                st.session_state['injury_size_selected'] = True
+                conversation.injury_size = selected_size
+                self._add_message(conversation, "user", selected_size, "answer")
+                self._add_message_db(conversation, "user", selected_size, "answer", f"Q{3 + conversation.counter}")
+                
+                self.render_previous_conversation()
+                add_custom_css()
+                self._ask_injury_location(conversation_id)
+
+        if not st.session_state['injury_size_selected']:
+            size_question = "Please specify the size of the injury"
+            self._add_message(conversation, "system", size_question, "question")
+            self._add_message_db(conversation, "system", size_question, "question", f"Q{3 + conversation.counter}")
+            self.speech_service.synthesize_speech(size_question)
+            
+            injury_sizes = ["Small", "Medium", "Large"]
+            st.selectbox(
+                "Select injury size:",
+                options=injury_sizes,
+                key='selected_injury_size',
+                on_change=on_size_change
+            )
+            return
+
+               
+    def _ask_injury_details(self, conversation_id):
+        """Handles the injury size and location questions."""
+        conversation = self.conversations.get(conversation_id)
+        self.display_status("warning","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
+        conversation.scenario_type = "accident"
+
+        if 'injury_size_selected' not in st.session_state:
+            st.session_state['injury_size_selected'] = False
+            
+        def on_size_change():
+            selected_size = st.session_state.get('selected_injury_size')
+            if selected_size:
+                st.session_state['injury_size_selected'] = True
+                conversation.injury_size = selected_size
+                self._add_message(conversation, "user", selected_size, "answer")
+                self._add_message_db(conversation, "user", selected_size, "answer", f"Q{3 + conversation.counter}")
+                
+                self.render_previous_conversation()
+                add_custom_css()
+                self._ask_injury_location(conversation_id)
+
+        # Show selectbox if size not selected yet
+        if not st.session_state['injury_size_selected']:
+            size_question = "Please specify the size of the injury"
+            self._add_message(conversation, "system", size_question, "question")
+            self._add_message_db(conversation, "system", size_question, "question", f"Q{3 + conversation.counter}")
+            self.speech_service.synthesize_speech(size_question)
+            
+            # Create selectbox for injury size
+            injury_sizes = ["Small", "Medium", "Large"]
+            st.selectbox(
+                "Select injury size:",
+                options=injury_sizes,
+                key='selected_injury_size',
+                on_change=on_size_change
+            )
+            return 
+            
+    def _ask_injury_location(self, conversation_id):
+        """Ask about injury location"""
+        conversation = self.conversations.get(conversation_id)
+        
+        location_question = "Please specify the location of the injury"
+        self._add_message(conversation, "system", location_question, "question")
+        self._add_message_db(conversation, "system", location_question, "question", f"Q{3 + conversation.counter}")
+        self.speech_service.synthesize_speech(location_question)
+        
+        location_response = self.capture_user_response(20, skip_grammar_check=False)
+        
+        if location_response:
+            self._add_message(conversation, "user", location_response, "answer")
+            self._add_message_db(conversation, "user", location_response, "answer", f"Q{3 + conversation.counter}")
+            conversation.injury_location = location_response
+            
+            # Clear injury size selection state
+            if 'injury_size_selected' in st.session_state:
+                del st.session_state['injury_size_selected']
+            
+            # Continue with normal question flow
+            self.proceed_to_next_question(conversation_id)
 
     def needs_validation_informed(self, question):
         validation_keywords = ["Please include a date and name of the person who was informed"]
@@ -445,7 +587,6 @@ class ConversationManager:
         
     
     def display_status(self, type, message):
-        # conversation_id =  st.session_state.get('conversation_id')
         conversation = self.conversations.get(self.conversation_id)
         self._add_message(conversation, type, message, 'status')
         if(type == 'info'):
@@ -477,7 +618,8 @@ class ConversationManager:
             self.notification(conversation_id)
             
         else:
-            response_text = "Manager hasn't been notified."
+            response_text = "Manager has been notified with the updated summary"
+            self.notification(conversation_id)
         
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
         self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
@@ -490,7 +632,7 @@ class ConversationManager:
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
         conversation = self.conversations.get(conversation_id)
-        #================================================================
+
         asking_edit_response = "Would you like to edit any of your response?"
         
         self.speech_service.synthesize_speech(asking_edit_response)
@@ -618,7 +760,6 @@ class ConversationManager:
             updated_summary_flag = False
             self.notify_manager(conversation_id, updated_summary_flag)
           
-        #============================================================================ 
 
     def display_updated_summary(self):
         """Display the updated summary when the text area changes."""

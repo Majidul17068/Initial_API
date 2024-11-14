@@ -129,3 +129,94 @@ class GroqService:
             # Handle exceptions appropriately
             print(f"An error occurred: {e}")
             return ""
+        
+        
+        
+    def event_analysis(self, event_details: str) -> dict:
+        """
+        Analyzes the event details to determine injury risk, classification, and whether injury is mentioned.
+        
+        Args:
+            event_details (str): The detailed description of the event
+                
+        Returns:
+            dict: Contains:
+                - has_injury (bool): True if there's any chance of physical injury
+                - likelihood (float): Percentage likelihood of injury (0-100)
+                - reasoning (str): Explanation of the assessment
+                - injury_mentioned (bool): True if injury is explicitly/implicitly described
+                - classification (str): 'incident' or 'accident'
+                - classification_reason (str): Explanation for classification
+        """
+        try:
+            response = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an expert in healthcare and injury risk assessment. Analyze the event "
+                            "description for three aspects:\n\n"
+                            "1. Injury Risk Assessment: Determine if there's any possibility of physical injury\n"
+                            "2. Injury Mention Detection: Check if injury is explicitly or implicitly mentioned\n"
+                            "   - Explicit mentions: bruise, cut, wound, injury, pain, etc.\n"
+                            "   - Implicit mentions: bleeding, swelling, redness, limping, unable to move, etc.\n"
+                            "   - Physical symptoms: marks, discoloration, difficulty moving, etc.\n"
+                            "3. Event Classification: Determine if this is an incident or accident\n\n"
+                            "Format your response EXACTLY as follows:\n"
+                            "Has Injury Risk: [true/false]\n"
+                            "Risk Percentage: [0-100]\n"
+                            "Risk Reasoning: [brief explanation]\n"
+                            "Injury Mentioned: [true/false]\n"
+                            "Mention Details: [what injury-related terms were found, or 'None found']\n"
+                            "Classification: [INCIDENT/ACCIDENT]\n"
+                            "   - If there is any injury/physical injury classified as accident"
+                            "   - If there any no injury classified as accident"
+                            "Classification Reason: [brief explanation]\n\n"
+                            "Examples:\n"
+                            "'Resident fell and has a bruise' -> Injury Mentioned: true (explicit mention of bruise)\n"
+                            "'Resident's arm is red and swollen' -> Injury Mentioned: true (implicit - symptoms described)\n"
+                            "'Resident nearly fell but was caught' -> Injury Mentioned: false (no injury described)\n"
+                            "'Resident seems uncomfortable moving' -> Injury Mentioned: true (implicit - physical symptom)\n"
+                            "'Resident refused medication' -> Injury Mentioned: false (no physical symptoms described)"
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this event description: {event_details}"
+                    }
+                ],
+                model="llama-3.1-70b-versatile",
+                temperature=0.1
+            )
+
+            analysis_text = response.choices[0].message.content.strip()
+            
+            # Parse the response
+            lines = analysis_text.split('\n')
+            analysis_dict = {}
+            for line in lines:
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    analysis_dict[key.strip()] = value.strip()
+
+            return {
+                "has_injury": 'true' in analysis_dict.get('Has Injury Risk', '').lower(),
+                "likelihood": float(analysis_dict.get('Risk Percentage', '0').strip().rstrip('%')),
+                "reasoning": analysis_dict.get('Risk Reasoning', ''),
+                "injury_mentioned": 'true' in analysis_dict.get('Injury Mentioned', '').lower(),
+                "mention_details": analysis_dict.get('Mention Details', 'None found'),
+                "classification": analysis_dict.get('Classification', 'INCIDENT').lower(),
+                "classification_reason": analysis_dict.get('Classification Reason', '')
+            }
+
+        except Exception as e:
+            print(f"Error in event analysis: {e}")
+            return {
+                "has_injury": True,  # Default to True for safety
+                "likelihood": 50.0,
+                "reasoning": "Error in analysis - defaulting to cautionary assessment",
+                "injury_mentioned": False,
+                "mention_details": "Error in analysis",
+                "classification": "accident",  # Default to accident for safety
+                "classification_reason": "Error in analysis - defaulting to accident classification"
+            }
