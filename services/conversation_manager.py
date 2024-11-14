@@ -342,17 +342,14 @@ class ConversationManager:
         while True:
             user_response = self.capture_user_response(120, skip_grammar_check=False)
             
-            # Special handling for event details question
             if current_question == "Please provide details of the event":
                 # Analyze the event for injury risk
                 analysis_result = self.groq_service.event_analysis(user_response)
                 
-                # Store the responses and analysis
                 conversation.responses[current_question] = user_response
                 conversation.injury_analysis = analysis_result
                 conversation.scenario_type = analysis_result['classification']
                 
-                # Prepare the analysis message
                 status_level = "warning" if analysis_result['has_injury'] else "info"
                 analysis_message = (
                     f"📋 Event Classification.\n\n"
@@ -369,18 +366,14 @@ class ConversationManager:
                 self._add_message(conversation, "user", user_response, "answer")
                 self.display_status("warning", analysis_message)
                 self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
-
-                # Handle injury assessment flow based on analysis
+                
                 if analysis_result['has_injury']:
                     if analysis_result['injury_mentioned']:
-                        # Direct injury mentioned - skip confirmation, go straight to size/location
                         self._ask_injury_size(conversation_id)
                     else:
-                        # Potential injury - ask for confirmation first
                         self._ask_injury_confirmation(conversation_id)
                     return
                 
-                # No injury risk - continue with normal flow
                 self.proceed_to_next_question(conversation_id)
                 return
 
@@ -391,7 +384,6 @@ class ConversationManager:
                 self.speech_service.synthesize_speech(error_invalid_time)
                 continue
             
-            # ... rest of the validation checks remain the same ...
 
             if user_response:
                 conversation.responses[current_question] = user_response
@@ -403,7 +395,6 @@ class ConversationManager:
             self._add_message(conversation, "system", error_prompt, "system_message")
             self.speech_service.synthesize_speech(error_prompt)
 
-        # For all other questions, proceed to next question
         self.proceed_to_next_question(conversation_id)
         
     def _ask_injury_confirmation(self, conversation_id):
@@ -419,12 +410,10 @@ class ConversationManager:
         self._add_message_db(conversation, "user", injury_response, "answer", f"Q{3 + conversation.counter}")
         
         if "yes" in injury_response.lower():
-            # Update classification to accident
             conversation.scenario_type = "accident"
             self.display_status("warning", "Based on the injury, this event will be classified as an accident.")
             self._ask_injury_size(conversation_id)
         else:
-            # No injury - continue with normal flow
             self.proceed_to_next_question(conversation_id)
             
     def _ask_injury_size(self, conversation_id):
@@ -446,14 +435,12 @@ class ConversationManager:
                 add_custom_css()
                 self._ask_injury_location(conversation_id)
 
-        # Show selectbox if size not selected yet
         if not st.session_state['injury_size_selected']:
             size_question = "Please specify the size of the injury"
             self._add_message(conversation, "system", size_question, "question")
             self._add_message_db(conversation, "system", size_question, "question", f"Q{3 + conversation.counter}")
             self.speech_service.synthesize_speech(size_question)
             
-            # Create selectbox for injury size
             injury_sizes = ["Small", "Medium", "Large"]
             st.selectbox(
                 "Select injury size:",
@@ -469,7 +456,7 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         self.display_status("warning","Thank you for confirming the injury. Based on this information, the incident will be classified as an accident.")
         conversation.scenario_type = "accident"
-        # Set state for injury size selection if not already set
+
         if 'injury_size_selected' not in st.session_state:
             st.session_state['injury_size_selected'] = False
             
@@ -600,7 +587,6 @@ class ConversationManager:
         
     
     def display_status(self, type, message):
-        # conversation_id =  st.session_state.get('conversation_id')
         conversation = self.conversations.get(self.conversation_id)
         self._add_message(conversation, type, message, 'status')
         if(type == 'info'):
@@ -632,7 +618,8 @@ class ConversationManager:
             self.notification(conversation_id)
             
         else:
-            response_text = "Manager hasn't been notified."
+            response_text = "Manager has been notified with the updated summary"
+            self.notification(conversation_id)
         
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
         self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
