@@ -366,7 +366,7 @@ class ConversationManager:
                 self._add_message(conversation, "user", user_response, "answer")
                 self.display_status("warning", analysis_message)
                 self._add_message_db(conversation, status_level, analysis_message, "analysis", f"Q{3 + conversation.counter}")
-                
+
                 if analysis_result['has_injury']:
                     if analysis_result['injury_mentioned']:
                         self._ask_injury_size(conversation_id)
@@ -619,7 +619,6 @@ class ConversationManager:
             
         else:
             response_text = "Manager has been notified with the updated summary"
-            self.notification(conversation_id)
         
         self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
         self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
