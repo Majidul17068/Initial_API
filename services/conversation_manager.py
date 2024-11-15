@@ -295,10 +295,8 @@ class ConversationManager:
                 to_emails=To(email)
             )
             
-            # Assign the template ID
             message.template_id = 'd-e97c8a529800421599dfdcf120d70d03'
             
-            # Pass dynamic template data
             message.dynamic_template_data = dynamic_data
 
             try:
@@ -306,14 +304,12 @@ class ConversationManager:
                 sg = SendGridAPIClient(SENDGRID_API_KEY)
                 response = sg.send(message)
                 
-                # Log the response from the SendGrid API
                 print(f"Email sent to {email}")
                 print(f"Status Code: {response.status_code}")
                 print(f"Response Body: {response.body.decode() if response.body else 'No content'}")
                 print(f"Response Headers: {response.headers}")
 
             except Exception as e:
-                # Catch and display any errors that occur
                 print(f"An error occurred while sending email to {email}: {str(e)}")
         
 
@@ -441,7 +437,7 @@ class ConversationManager:
             self._add_message_db(conversation, "system", size_question, "question", f"Q{3 + conversation.counter}")
             self.speech_service.synthesize_speech(size_question)
             
-            injury_sizes = ["Small", "Medium", "Large"]
+            injury_sizes = ["Please Select the size of the injury","Small", "Medium", "Large"]
             st.selectbox(
                 "Select injury size:",
                 options=injury_sizes,
@@ -603,30 +599,56 @@ class ConversationManager:
         conversation = self.conversations.get(conversation_id)
         """Handles notifying the manager based on user response."""
         if flag:
-            prompt = "Would you like me to notify the manager with updated summary?"
-        else:
-            prompt = "Would you like to notify the manager with this event summary?"
-            
-        self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
-        self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
-        self.speech_service.synthesize_speech(prompt)
-        
-        user_response = self.capture_user_response(15, skip_grammar_check=True)
-
-        if "yes" in user_response.lower():
-            response_text = "Manager has been notified."
             self.notification(conversation_id)
-            
+            prompt = "Manager has been notified with the updated summary"
+            self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
+            self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+            self.speech_service.synthesize_speech(prompt)
+            time.sleep(1)
+            final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
+            self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
+            self.speech_service.synthesize_speech(final_prompt)
+            self.stop_conversation(conversation_id)
+
         else:
-            response_text = "Manager has been notified with the updated summary"
-        
-        self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
-        self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
-        self.speech_service.synthesize_speech(response_text) 
-        time.sleep(1)
-        final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
-        self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
-        self.speech_service.synthesize_speech(final_prompt)
+            prompt = "Would you like to notify the manager with this event summary? Please say yes to continue with this summary."
+            
+            self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
+            self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+            self.speech_service.synthesize_speech(prompt)
+            
+            user_response = self.capture_user_response(15, skip_grammar_check=True)
+
+            if "yes" in user_response.lower():
+                response_text = "Manager has been notified."
+                self.notification(conversation_id)
+                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
+                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
+                self.speech_service.synthesize_speech(response_text) 
+                time.sleep(1)
+                final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
+                self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
+                self.speech_service.synthesize_speech(final_prompt)
+                self.stop_conversation(conversation_id)
+                
+            else:
+                response_text = "Please Edit the summary to notify the manager with the updated summary."
+                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
+                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
+                self.speech_service.synthesize_speech(response_text) 
+                time.sleep(10)
+                response_text = "Manager has been notified."
+                self.notification(conversation_id)
+                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
+                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
+                self.speech_service.synthesize_speech(response_text)
+                time.sleep(1)
+                final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
+                self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
+                self.speech_service.synthesize_speech(final_prompt)
+                self.stop_conversation(conversation_id)
+            
+            
 
     def finalize_conversation(self, conversation_id):
         """Finalizes the conversation with summary and saves it."""
@@ -789,7 +811,6 @@ class ConversationManager:
         if conversation.summary_edited:
             try:
                 conversations_collection = self.db_client.db["conversations"]
-                # Update only the updated_summary field if required
                 conversations_collection.update_one(
                     {"conversation_id": conversation.conversation_id},
                     {"$set": {"summary": conversation.scenario_summary}}

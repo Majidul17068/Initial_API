@@ -5,13 +5,10 @@ from services.api_service import reset_user_transcript
 load_dotenv()
 
 
-print("transcript url is: ", os.getenv('VOICE_TRANSCRIPT_API_ENDPOINT'))
-
 def load_azure_speech_sdk(conversation_id = "-"):
-    # res = voice_rec_comp()
+
     reset_user_transcript(conversation_id)
     
-    # print('res is: ', res)
     func = "()=>{}"
     if conversation_id != "-":
         func = """() => {
