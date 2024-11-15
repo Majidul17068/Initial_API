@@ -437,7 +437,7 @@ class ConversationManager:
             self._add_message_db(conversation, "system", size_question, "question", f"Q{3 + conversation.counter}")
             self.speech_service.synthesize_speech(size_question)
             
-            injury_sizes = ["Small", "Medium", "Large"]
+            injury_sizes = ["Please Select the size of the injury","Small", "Medium", "Large"]
             st.selectbox(
                 "Select injury size:",
                 options=injury_sizes,
@@ -611,7 +611,7 @@ class ConversationManager:
             self.stop_conversation(conversation_id)
 
         else:
-            prompt = "Would you like to notify the manager with this event summary?"
+            prompt = "Would you like to notify the manager with this event summary? Please say yes to continue with this summary."
             
             self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
             self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
