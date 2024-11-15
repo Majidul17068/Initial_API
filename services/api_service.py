@@ -12,7 +12,6 @@ def reset_user_transcript(conversation_id):
         "Content-Type": "application/json"
     }
     requests.get(url, headers=headers)
-    #print('api call : reset: ', url)
 
 
 
@@ -25,7 +24,6 @@ def fetch_user_transcript(conversation_id):
         "Content-Type": "application/json"
     }
 
-    #print(f"Fetching data from: {url}")
 
     response = requests.get(url, headers=headers)
 
@@ -40,7 +38,6 @@ def fetch_is_speaking(conversation_id):
     """
     # Construct the URL for the `get-is-speaking` endpoint
     url = f"{os.getenv('VOICE_TRANSCRIPT_API_ENDPOINT')}/get-is-speaking/?conversation_id={conversation_id}"
-    #print('url is: ', url)
     headers = {
         "Content-Type": "application/json"
     }
@@ -57,6 +54,5 @@ def fetch_is_speaking(conversation_id):
             return {"conversation_id": conversation_id, "is_speaking": False}
     
     except requests.RequestException as e:
-        # Handle any request errors
         print(f"Error fetching data: {e}")
         return {"conversation_id": conversation_id, "is_speaking": False}

@@ -17,7 +17,7 @@ def check_password():
             st.session_state["password_correct"] = True
             del st.session_state["password"]
             st.query_params.rdtaska_qaw3n = "astx5pregqw2"
-            st.rerun()  # Force a rerun to update the UI immediately
+            st.rerun()  
         else:
             st.session_state["password_correct"] = False
             st.session_state["login_attempt"] = True
@@ -48,16 +48,16 @@ def check_password():
 
     # If login is valid, show the main app and logout button
     if st.session_state.get("password_correct", False):
-        # Add a logout button to the sidebar
+        
         if st.sidebar.button("Log Out"):
-            # Clear session state and query parameters on logout
+            
             for key in ["password_correct", "login_attempt", "username"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.query_params.clear()
             st.rerun()
             
-        main.main()  # Call the main function from main.py
+        main.main()  
         st.stop()
 
     # Show inputs for username and password
