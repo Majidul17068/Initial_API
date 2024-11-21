@@ -611,7 +611,7 @@ class ConversationManager:
             self.stop_conversation(conversation_id)
 
         else:
-            prompt = "Would you like to notify the manager with this event summary? Please say yes to continue with this summary."
+            prompt = "Would you like to edit the summary of the event?"
             
             self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
             self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
@@ -619,7 +619,7 @@ class ConversationManager:
             
             user_response = self.capture_user_response(15, skip_grammar_check=True)
 
-            if "yes" in user_response.lower():
+            if "no" in user_response.lower():
                 response_text = "Manager has been notified."
                 self.notification(conversation_id)
                 self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
