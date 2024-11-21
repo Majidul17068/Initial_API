@@ -24,5 +24,6 @@ class Conversation:
         self.injury_analysis = None
         self.injury_size = None
         self.injury_location = None
+        self.initial_Summary = None
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()

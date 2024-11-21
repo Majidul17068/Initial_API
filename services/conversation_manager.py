@@ -691,6 +691,7 @@ class ConversationManager:
                         display_chat_message(is_user=False, message_text=f"{st.session_state['Updated_response_TextArea']}")
                         self._add_message(self.conversations[conversation_id], "user", st.session_state['Updated_response_TextArea'], "Updated Response Text")
                         conversation.updated_conversation = st.session_state['Updated_response_TextArea']
+                        conversation.conversation_collection = st.session_state['Updated_response_TextArea']
                         summary = self.groq_service.summarize_scenario(st.session_state['Updated_response_TextArea'], conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
                         with st.spinner("Processing the event summary..."):
@@ -737,6 +738,13 @@ class ConversationManager:
                                 st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
                         self.save_conversation_to_db(conversation_id)
         else:
+            retrived_conversation = []
+            for message in conversation.messages:
+                if(message['sender'] in ('user', 'system')):
+                    retrived_conversation.append(f"**{message['sender'].upper()}** : {message['text']}")
+            
+            message_text='\n\n'.join(retrived_conversation)
+            conversation.conversation_collection = message_text
             summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
             with st.spinner("Processing the event summary..."):
@@ -767,7 +775,9 @@ class ConversationManager:
                 self.render_previous_conversation()
                 if "text_area_updated" not in st.session_state:
                     st.session_state['text_area_updated'] = st.session_state['recent_summary']
-
+                
+                conversation.initial_Summary = st.session_state['text_area_updated']
+                print(conversation.initial_Summary)
                 with st.form(key='summary_form'):
                     st.text_area(
                     "Edit the summary:", 
@@ -816,9 +826,23 @@ class ConversationManager:
                     {"$set": {"summary": conversation.scenario_summary}}
                 )
                 print(f"Updated summary for conversation {conversation_id} saved to MongoDB.")
+
+                # Update the AI_Data collection instead of inserting
+                ai_data_collection = self.db_client.db["AI_Data"]
+                ai_data_collection.update_one(
+                    {"conversation_id": conversation.conversation_id},  # Match the conversation_id
+                    {"$set": {  # Update the fields
+                        "Conversation": conversation.conversation_collection,
+                        "Chosen Summary": conversation.scenario_summary,
+                        "Rejected Summary": conversation.initial_Summary
+                    }}  # Create a new document if no match is found
+                )
+                print(f"Chosen and Rejected summaries saved to AI_Data for conversation {conversation_id}.")
+
             except Exception as e:
                 print(f"Error updating summary in MongoDB: {e}")
         else:
+            # Save the previous summary as Chosen Summary
             data = {
                 "conversation_id": conversation.conversation_id,
                 "scenario_type": conversation.scenario_type,
@@ -830,7 +854,7 @@ class ConversationManager:
                 "messages": conversation.message_db,
                 "Updated_Reponse": conversation.updated_conversation,
                 "summary": conversation.scenario_summary,
-                "post_event_completed":conversation.post_event_completed,
+                "post_event_completed": conversation.post_event_completed,
                 "created_at": conversation.created_at,
                 "updated_at": conversation.updated_at
             }
@@ -839,6 +863,17 @@ class ConversationManager:
                 conversations_collection = self.db_client.db["conversations"]
                 conversations_collection.insert_one(data)
                 print(f"Conversation {conversation_id} saved to MongoDB.")
+
+                # Save to AI_Data collection with the previous summary as Chosen Summary
+                ai_data_collection = self.db_client.db["AI_Data"]
+                ai_data_collection.insert_one({
+                    "conversation_id": conversation.conversation_id,
+                    "Conversation" : conversation.conversation_collection,
+                    "Chosen Summary": conversation.scenario_summary,
+                    "Rejected Summary": conversation.initial_Summary  # No rejected summary if not edited
+                })
+                print(f"Chosen Summary saved to AI_Data for conversation {conversation_id}.")
+
             except Exception as e:
                 print(f"Error saving conversation to MongoDB: {e}")
 
