@@ -40,6 +40,7 @@ pipeline {
         stage('Main Build Docker Image') {
             when {
                    anyOf {
+		      branch 'staging';
 		      branch 'dev_server'
                    }
             }
@@ -51,6 +52,9 @@ pipeline {
                 sh "sed -i 's/ENVI/.env.care-fe-prod/g' Dockerfile"
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:prod -f Dockerfile .'
                 } else if (env.GIT_BRANCH == 'dev_server') {
+                sh 'cp /var/jenkins_home/env/.env.careapps-ai-initial-dev-tulip .env'
+	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
+                } else if (env.GIT_BRANCH == 'staging') {
                 sh 'cp /var/jenkins_home/env/.env.careapps-ai-initial .env'
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
                 }
@@ -60,6 +64,7 @@ pipeline {
         stage('Login to AWS ECR') {
             when {
                    anyOf {
+		     branch 'staging';
 		     branch 'dev_server'
                    }
             }
@@ -72,6 +77,7 @@ pipeline {
         stage('Tag and Push to ECR') {
             when {
                    anyOf {
+		    branch 'staging';
 		    branch 'dev_server'
                    }
             }
@@ -88,7 +94,13 @@ pipeline {
                 // Push the Docker image to ECR
                 sh "docker push $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:dev"
                 // Cleanup the Docker image
-                sh "docker images  | grep $DOCKER_IMAGE_NAME | grep dev | awk '{print \$3}' | xargs -L 1 docker rmi -f"
+                sh "docker images | grep $DOCKER_IMAGE_NAME | grep dev | awk '{print \$3}' | xargs -r -L 1 docker rmi -f || true"
+                 } else if (env.GIT_BRANCH == 'staging') {
+                sh "docker tag $DOCKER_IMAGE_NAME:staging $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:staging"
+                // Push the Docker image to ECR
+                sh "docker push $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:staging"
+                // Cleanup the Docker image
+                sh "docker images | grep $DOCKER_IMAGE_NAME | grep dev | awk '{print \$3}' | xargs -r -L 1 docker rmi -f || true"
                  }
                 }
             }
@@ -116,7 +128,7 @@ pipeline {
             }
             steps {
                 script {
-                        def servers = ['10.217.126.29']
+                        def servers = ['10.217.126.28']
                         def branch = 'staging'
                         deploy (servers,branch)
                     }
