@@ -598,6 +598,7 @@ class ConversationManager:
     def notify_manager(self, conversation_id, flag):
         conversation = self.conversations.get(conversation_id)
         """Handles notifying the manager based on user response."""
+        add_custom_css()
         if flag:
             self.notification(conversation_id)
             prompt = "Manager has been notified with the updated summary"
@@ -610,42 +611,16 @@ class ConversationManager:
             self.speech_service.synthesize_speech(final_prompt)
 
         else:
-            prompt = "Would you like to edit the summary of the event?"
-            
-            self._add_message(self.conversations[conversation_id], "system", prompt, "system_message")
-            self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
-            self.speech_service.synthesize_speech(prompt)
-            
-            user_response = self.capture_user_response(15, skip_grammar_check=True)
-
-            if "no" in user_response.lower():
-                response_text = "Manager has been notified."
-                self.notification(conversation_id)
-                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
-                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
-                self.speech_service.synthesize_speech(response_text) 
-                time.sleep(1)
-                final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
-                self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
-                self.speech_service.synthesize_speech(final_prompt)
-                self.stop_conversation(conversation_id)
-                
-            else:
-                response_text = "Please Edit the summary to notify the manager with the updated summary."
-                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
-                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
-                self.speech_service.synthesize_speech(response_text) 
-                time.sleep(10)
-                response_text = "Manager has been notified."
-                self.notification(conversation_id)
-                self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
-                self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
-                self.speech_service.synthesize_speech(response_text)
-                time.sleep(1)
-                final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
-                self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
-                self.speech_service.synthesize_speech(final_prompt)
-            
+            response_text = "Manager has been notified."
+            self.notification(conversation_id)
+            self._add_message(self.conversations[conversation_id], "system", response_text, "system_message")
+            self._add_message_db(self.conversations[conversation_id], "system", response_text, "system_message")
+            self.speech_service.synthesize_speech(response_text) 
+            time.sleep(1)
+            final_prompt = "Thank you for completing the immediate response report, all the information provided will be stored and can be retrieved in the post incident/accident report where you would be able to add more information about the event."
+            self._add_message(self.conversations[conversation_id], "system", final_prompt, "system_message")
+            self.speech_service.synthesize_speech(final_prompt)
+            self.stop_conversation(conversation_id)
             
 
     def finalize_conversation(self, conversation_id):
@@ -693,7 +668,7 @@ class ConversationManager:
                         summary = self.groq_service.summarize_scenario(st.session_state['Updated_response_TextArea'], conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
                         with st.spinner("Processing the event summary..."):
-                            summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+                            summary_prompt = "Thank you for filling out the form, here is a summary of the event.Once you finish reviewing the summary, you can edit it if needed."
                             conversation.messages.append({
                                 "sender": "system",
                                 "text": summary_prompt,
@@ -701,28 +676,72 @@ class ConversationManager:
                                 "message_type": "system_message"
                             })
                             self.speech_service.synthesize_speech(summary_prompt)
-
-                            display_chat_message(is_user=False, message_text=f"{summary}")
-
+                            #..............................................
                             conversation.scenario_summary = summary
-                            
-                            
                             conversation.updated_at = datetime.utcnow()
-                        
-                        if "Current_Summary" not in st.session_state:
-                            st.session_state['Current_Summary'] = conversation.scenario_summary
                             
-                        st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
-                        updated_summary_flag = False
-                        time.sleep(10)
-                        self.notify_manager(conversation_id, updated_summary_flag)
+                            if 'rating' not in st.session_state:
+                                st.session_state.rating = 10 
+                            self._add_message(self.conversations[conversation_id], "system", conversation.scenario_summary, "system_message")
+                            with st.form(key="rating_form"):
+                                            st.write(f"{summary}")
+                                            rating = st.radio(
+                                                "**:blue[How would you rate the summary out of 10?]**",
+                                                options=range(1, 11),
+                                                index=9,  
+                                                horizontal=True,
+                                                key='form_rating'
+                                            )
+                                            # Add submit button
+                                            st.form_submit_button("Complete Review", on_click=  lambda: edit_summary(rating))
+                                            
+                                            def edit_summary(rating):
+                                                if "Current_Summary" not in st.session_state:
+                                                    st.session_state['Current_Summary'] = conversation.scenario_summary
+                                                self.render_previous_conversation()
+                                                st.session_state.rating = st.session_state.get('form_rating', 10)
+                                                add_custom_css()
+                                                conversation.feedback_score=st.session_state.rating
+                                                if conversation.feedback_score < 5:
+                                                    feedback_request = "Help us improve our agent response by sharing your feedback."
+                                                    self.speech_service.synthesize_speech(feedback_request)
+                                                    with st.form(key='text_input_form'):
+                                                        text_input = st.text_input("Please share us your feedback.", key='feedback_input')
+                                                        st.form_submit_button("Submit Feedback",on_click=  lambda: collect_feedback() )
+                                                        def collect_feedback():
+                                                            feedback = st.session_state.get('feedback_input')
+                                                            print(feedback)
+                                                            conversation.user_feedback = feedback
+                                                            self.render_previous_conversation()
+                                                            prompt = "Would you like to edit the summary of the event?"                                                
+                                                            self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+                                                            self.speech_service.synthesize_speech(prompt)
+                                                            user_response = self.capture_user_response(15, skip_grammar_check=True)
+                                                            if 'yes' in user_response.lower():
+                                                                update_summary(summary)
+                                                            else:
+                                                                self.save_conversation_to_db(conversation_id)
+                                                                updated_summary_flag = False
+                                                                self.notify_manager(conversation_id, updated_summary_flag)
+                                                else:
+                                                    prompt = "Would you like to edit the summary of the event?"                                                
+                                                    self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+                                                    self.speech_service.synthesize_speech(prompt)
+                                                    user_response = self.capture_user_response(15, skip_grammar_check=True)
+                                                    if 'yes' in user_response.lower():
+                                                        update_summary(summary)
+                                                    else:
+                                                        self.save_conversation_to_db(conversation_id)
+                                                        updated_summary_flag = False
+                                                        self.notify_manager(conversation_id, updated_summary_flag)
+
                             
                         def update_summary(summary):
                             if "recent_summary" not in st.session_state:
                                 st.session_state['recent_summary'] = summary
                             if "Updated_Summary" not in st.session_state:
                                 st.session_state['Updated_Summary'] = ''
-                            self.render_previous_conversation()
+                            #self.render_previous_conversation()
                             if "text_area_updated" not in st.session_state:
                                 st.session_state['text_area_updated'] = st.session_state['recent_summary']
 
@@ -734,7 +753,7 @@ class ConversationManager:
                                 height=500
                                 )
                                 st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-                        self.save_conversation_to_db(conversation_id)
+                        #self.save_conversation_to_db(conversation_id)
         else:
             retrived_conversation = []
             for message in conversation.messages:
@@ -746,7 +765,7 @@ class ConversationManager:
             summary = self.groq_service.summarize_scenario(conversation.responses, conversation.resident_name, conversation.scenario_type, conversation.event_type, conversation.witness)
 
             with st.spinner("Processing the event summary..."):
-                summary_prompt = "Thank you for filling out the form, here is a summary of the event..."
+                summary_prompt = "Thank you for filling out the form, here is a summary of the event.Once you finish reviewing the summary, you can edit it if needed."
                 conversation.messages.append({
                     "sender": "system",
                     "text": summary_prompt,
@@ -754,23 +773,73 @@ class ConversationManager:
                     "message_type": "system_message"
                 })
                 self.speech_service.synthesize_speech(summary_prompt)
-
-                display_chat_message(is_user=False, message_text=f"{summary}")
-
+                #..............................................
                 conversation.scenario_summary = summary
                 conversation.updated_at = datetime.utcnow()
-            
-            if "Current_Summary" not in st.session_state:
-                st.session_state['Current_Summary'] = conversation.scenario_summary
+                self._add_message(self.conversations[conversation_id], "system", conversation.scenario_summary, "system_message")
+                if 'rating' not in st.session_state:
+                    st.session_state.rating = 10 
                 
-            st.button("Edit Summary", on_click=lambda: update_summary(st.session_state['Current_Summary']))
-            
+                with st.form(key="rating_form"):
+                                st.write(f"{summary}")
+                                rating = st.radio(
+                                    "**:blue[How would you rate the summary out of 10?]**",
+                                    options=range(1, 11),
+                                    index=9,  
+                                    horizontal=True,
+                                    key='form_rating'
+                                )
+                                
+                                # Add submit button
+                                st.form_submit_button("Complete Review", on_click=  lambda: edit_summary(rating))
+                                
+                                def edit_summary(rating):
+                                    if "Current_Summary" not in st.session_state:
+                                        st.session_state['Current_Summary'] = conversation.scenario_summary
+                                        
+                                    st.session_state.rating = st.session_state.get('form_rating', 10)
+                                    add_custom_css()
+                                    conversation.feedback_score=st.session_state.rating
+                                    self.render_previous_conversation()
+                                    if conversation.feedback_score < 5:
+                                                    feedback_request = "Help us to improve the system by sharing your feedback."
+                                                    self.speech_service.synthesize_speech(feedback_request)
+                                                    with st.form(key='text_input_form'):
+                                                        text_input = st.text_input("Please share us your feedback.", key='feedback_input')
+                                                        st.form_submit_button("Submit Feedback",on_click=  lambda: collect_feedback() )
+                                                        def collect_feedback():
+                                                            feedback = st.session_state.get('feedback_input')
+                                                            conversation.user_feedback = feedback
+                                                            self.render_previous_conversation()
+                                                            prompt = "Would you like to edit the summary of the event?"                                                
+                                                            self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+                                                            self.speech_service.synthesize_speech(prompt)
+                                                            user_response = self.capture_user_response(15, skip_grammar_check=True)
+                                                            if 'yes' in user_response.lower():
+                                                                update_summary(summary)
+                                                            else:
+                                                                self.save_conversation_to_db(conversation_id)
+                                                                updated_summary_flag = False
+                                                                self.notify_manager(conversation_id, updated_summary_flag)
+                                    else:
+                                        prompt = "Would you like to edit the summary of the event?"                                                
+                                        self._add_message_db(self.conversations[conversation_id], "system", prompt, "system_message", f"Q{ 3 + conversation.counter}")
+                                        self.speech_service.synthesize_speech(prompt)
+                                        user_response = self.capture_user_response(15, skip_grammar_check=True)
+                                        if 'yes' in user_response.lower():
+                                            update_summary(summary)
+                                        else:
+                                            self.save_conversation_to_db(conversation_id)
+                                            updated_summary_flag = False
+                                            self.notify_manager(conversation_id, updated_summary_flag)
+                                            
+
             def update_summary(summary):
                 if "recent_summary" not in st.session_state:
                     st.session_state['recent_summary'] = summary
                 if "Updated_Summary" not in st.session_state:
                     st.session_state['Updated_Summary'] = ''
-                self.render_previous_conversation()
+                #self.render_previous_conversation()
                 if "text_area_updated" not in st.session_state:
                     st.session_state['text_area_updated'] = st.session_state['recent_summary']
                 
@@ -784,10 +853,10 @@ class ConversationManager:
                     height=500
                     )
                     st.form_submit_button(label='Update Summary', on_click=lambda: self.display_updated_summary())
-            self.save_conversation_to_db(conversation_id)
-            time.sleep(10)
-            updated_summary_flag = False
-            self.notify_manager(conversation_id, updated_summary_flag)
+            
+            #self.save_conversation_to_db(conversation_id)
+            
+            
           
 
     def display_updated_summary(self):
@@ -832,8 +901,14 @@ class ConversationManager:
                     {"$set": {  # Update the fields
                         "Conversation": conversation.conversation_collection,
                         "Chosen Summary": conversation.scenario_summary,
-                        "Rejected Summary": conversation.initial_Summary
-                    }}  # Create a new document if no match is found
+                        "Rejected Summary": conversation.initial_Summary,
+                        "user_feedback_score":conversation.feedback_score,
+                        "user_feedback":conversation.user_feedback,
+                        "llm_feedback_score": conversation.llm_score,
+                        "Updated_at": datetime.utcnow(), 
+
+
+                    }} 
                 )
                 print(f"Chosen and Rejected summaries saved to AI_Data for conversation {conversation_id}.")
 
@@ -866,9 +941,13 @@ class ConversationManager:
                 ai_data_collection = self.db_client.db["AI_Data"]
                 ai_data_collection.insert_one({
                     "conversation_id": conversation.conversation_id,
-                    "Conversation" : conversation.conversation_collection,
+                    "Conversation": conversation.conversation_collection,
                     "Chosen Summary": conversation.scenario_summary,
-                    "Rejected Summary": conversation.initial_Summary  # No rejected summary if not edited
+                    "Rejected Summary": conversation.initial_Summary,
+                    "user_feedback_score":conversation.feedback_score,
+                    "user_feedback":conversation.user_feedback,
+                    "llm_feedback_score": conversation.llm_score,
+                    "created_at": conversation.created_at
                 })
                 print(f"Chosen Summary saved to AI_Data for conversation {conversation_id}.")
 
@@ -890,10 +969,8 @@ class ConversationManager:
                 elif(type == 'error'):
                     st.error(message["text"])
                 elif(type == 'warning'):
-                    st.warning(message["text"])
+                    st.warning(message["text"]) 
                 elif(type == 'success'):
                     st.success(message["text"])
             else:
                 display_chat_message(is_user=(message["sender"] == "user"), message_text=message["text"])
-    
-    

@@ -25,5 +25,8 @@ class Conversation:
         self.injury_size = None
         self.injury_location = None
         self.initial_Summary = None
+        self.feedback_score = None
+        self.user_feedback=None
+        self.llm_score=None
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()

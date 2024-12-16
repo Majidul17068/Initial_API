@@ -50,7 +50,7 @@ class GroqService:
                         
                     }
                 ],
-                model="llama-3.1-70b-versatile",
+                model="llama-3.3-70b-versatile",
                 temperature=0.2
             )
 
@@ -115,7 +115,7 @@ class GroqService:
                         "content": user_response.strip()
                     }
                 ],  
-                model="llama-3.1-70b-versatile",
+                model="llama-3.3-70b-versatile",
                 temperature=0.5
             )
    
@@ -185,7 +185,7 @@ class GroqService:
                         "content": f"Please analyze this event description: {event_details}"
                     }
                 ],
-                model="llama-3.1-70b-versatile",
+                model="llama-3.3-70b-versatile",
                 temperature=0.1
             )
 
