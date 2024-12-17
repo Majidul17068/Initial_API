@@ -56,7 +56,7 @@ pipeline {
 	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
                 } else if (env.GIT_BRANCH == 'staging') {
                 sh 'cp /var/jenkins_home/env/.env.careapps-ai-initial .env'
-	        sh 'docker build -t $DOCKER_IMAGE_NAME:dev -f Dockerfile .'
+	        sh 'docker build -t $DOCKER_IMAGE_NAME:staging -f Dockerfile .'
                 }
                 }
             }
@@ -130,7 +130,7 @@ pipeline {
                 script {
                         def servers = ['10.217.126.28']
                         def branch = 'staging'
-                        deploy (servers,branch)
+                        deploy_docker (servers,branch)
                     }
                 }
             post {
