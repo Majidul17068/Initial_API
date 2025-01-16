@@ -49,11 +49,9 @@ class ConversationManager:
         if not conversation:
             raise ValueError("Conversation not found.")
 
-        
         conversation["responses"][question] = response
         self.save_conversation(conversation_id)
 
-        
         initial_questions = [
             "Please select the type of event from the options below.",
             "Please provide the name of the staff member who has any information regarding the event.",
@@ -68,20 +66,19 @@ class ConversationManager:
             if current_index < len(initial_questions) - 1:
                 return initial_questions[current_index + 1], None, None
 
-            
             if question == "Please provide details of the event.":
                 analysis_result = self.groq_service.event_analysis(response)
                 conversation["analysis"] = analysis_result
                 conversation["scenario_type"] = analysis_result["classification"]
 
                 analysis_message = (
-                    f"📋 **Event Classification**:\n\n"
-                    f"{'🚨 Accident' if analysis_result['classification'] == 'accident' else '⚡ Incident'}\n\n"
-                    f"**Reasoning**: {analysis_result['classification_reason']}\n\n"
-                    f"🏥 **Injury Risk Analysis**:\n\n"
-                    f"{'⚠️ High chance of physical injury\n' if analysis_result['has_injury'] else '✓ No significant injury risk detected\n'}"
-                    f"**Risk Level**: {analysis_result['likelihood']}%\n\n"
-                    f"**Assessment**: {analysis_result['reasoning']}\n\n"
+                    "📋 **Event Classification**:\n\n"
+                    + ("🚨 Accident" if analysis_result["classification"] == "accident" else "⚡ Incident") + "\n\n"
+                    + f"**Reasoning**: {analysis_result['classification_reason']}\n\n"
+                    + "🏥 **Injury Risk Analysis**:\n\n"
+                    + ("⚠️ High chance of physical injury\n" if analysis_result["has_injury"] else "✓ No significant injury risk detected\n")
+                    + f"**Risk Level**: {analysis_result['likelihood']}%\n\n"
+                    + f"**Assessment**: {analysis_result['reasoning']}\n\n"
                 )
 
                 self.save_conversation(conversation_id)
@@ -89,7 +86,6 @@ class ConversationManager:
                     return "Did the patient sustain a physical injury as a result of the event?", analysis_message, None
                 return "Please provide details of any immediate action taken.", analysis_message, None
 
-        
         if question == "Did the patient sustain a physical injury as a result of the event?":
             if response.lower() == "yes":
                 conversation["injury_questions"] = True
@@ -103,7 +99,6 @@ class ConversationManager:
                 conversation["injury_questions"] = False  # Reset flow
                 return "Please provide details of any immediate action taken.", None, None
 
-        
         remaining_questions = [
             "Please provide details of any immediate action taken.",
             "Would you like to add any vital observations?",
@@ -117,7 +112,6 @@ class ConversationManager:
             if current_index < len(remaining_questions) - 1:
                 return remaining_questions[current_index + 1], None, None
 
-            # summary for the final line
             if question == "Thank you for filling out the form. Here is a summary of the event.":
                 summary = self.groq_service.summarize_scenario(
                     responses=conversation["responses"],
@@ -131,3 +125,10 @@ class ConversationManager:
                 return None, None, summary
 
         return None, None, None
+
+    def stop_conversation(self, conversation_id):
+        """Stop a conversation and remove it from active memory."""
+        if conversation_id in self.conversations:
+            del self.conversations[conversation_id]
+        else:
+            raise ValueError("Conversation not found.")
