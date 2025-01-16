@@ -49,11 +49,11 @@ class ConversationManager:
         if not conversation:
             raise ValueError("Conversation not found.")
 
-        # Save the user's response
+        
         conversation["responses"][question] = response
         self.save_conversation(conversation_id)
 
-        # Initial questions flow
+        
         initial_questions = [
             "Please select the type of event from the options below.",
             "Please provide the name of the staff member who has any information regarding the event.",
@@ -68,7 +68,7 @@ class ConversationManager:
             if current_index < len(initial_questions) - 1:
                 return initial_questions[current_index + 1], None, None
 
-            # Special case: Event analysis for the event details question
+            
             if question == "Please provide details of the event.":
                 analysis_result = self.groq_service.event_analysis(response)
                 conversation["analysis"] = analysis_result
@@ -89,7 +89,7 @@ class ConversationManager:
                     return "Did the patient sustain a physical injury as a result of the event?", analysis_message, None
                 return "Please provide details of any immediate action taken.", analysis_message, None
 
-        # Special case: Injury-specific flow
+        
         if question == "Did the patient sustain a physical injury as a result of the event?":
             if response.lower() == "yes":
                 conversation["injury_questions"] = True
@@ -100,10 +100,10 @@ class ConversationManager:
             if question == "Please specify the size of the injury.":
                 return "Please specify the location of the injury.", None, None
             if question == "Please specify the location of the injury.":
-                conversation["injury_questions"] = False  # Reset injury-specific flow
+                conversation["injury_questions"] = False  # Reset flow
                 return "Please provide details of any immediate action taken.", None, None
 
-        # Remaining questions
+        
         remaining_questions = [
             "Please provide details of any immediate action taken.",
             "Would you like to add any vital observations?",
@@ -117,7 +117,7 @@ class ConversationManager:
             if current_index < len(remaining_questions) - 1:
                 return remaining_questions[current_index + 1], None, None
 
-            # Special case: Generate summary for the final question
+            # summary for the final line
             if question == "Thank you for filling out the form. Here is a summary of the event.":
                 summary = self.groq_service.summarize_scenario(
                     responses=conversation["responses"],

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from services.conversation_manager import ConversationManager
 import logging
 
-# Initialize app and services
+
 app = FastAPI()
 conversation_manager = ConversationManager()
 
@@ -17,11 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Request models
+
 class UserResponse(BaseModel):
     question: str
     response: str
