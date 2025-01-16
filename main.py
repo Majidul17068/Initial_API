@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from services.conversation_manager import ConversationManager
 import logging
-
+import os
+import uvicorn
 
 app = FastAPI()
 conversation_manager = ConversationManager()
@@ -17,10 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class UserResponse(BaseModel):
     question: str
@@ -71,6 +70,7 @@ def stop_conversation(conversation_id: str):
     except ValueError as ve:
         logger.error(f"Error: {ve}")
         raise HTTPException(status_code=404, detail=str(ve))
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
