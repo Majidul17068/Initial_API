@@ -12,7 +12,7 @@ conversation_manager = ConversationManager()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust for frontend URL
+    allow_origins=["*"],  # Adjust for frontend URL if needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,20 +46,10 @@ def ask_question(conversation_id: str, user_response: UserResponse):
         next_question, analysis_message, summary = conversation_manager.handle_question(
             conversation_id, user_response.question, user_response.response
         )
-
-        response_data = {"next_question": next_question}
-        if analysis_message:
-            response_data["analysis"] = analysis_message
-        if summary:
-            response_data["summary"] = summary
-
-        return response_data
+        return {"next_question": next_question, "analysis": analysis_message, "summary": summary}
     except ValueError as ve:
         logger.error(f"Error: {ve}")
         raise HTTPException(status_code=404, detail=str(ve))
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 @app.post("/stop-conversation/{conversation_id}")
 def stop_conversation(conversation_id: str):
@@ -72,5 +62,5 @@ def stop_conversation(conversation_id: str):
         raise HTTPException(status_code=404, detail=str(ve))
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    port = int(os.getenv("PORT", "8080"))  # Use Render's assigned port
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
