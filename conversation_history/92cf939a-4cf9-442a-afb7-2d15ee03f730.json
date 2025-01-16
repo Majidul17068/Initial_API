@@ -1,0 +1,30 @@
+{
+    "responses": {
+        "Please select the type of event from the options below.": "Fall",
+        "Please provide the name of the staff member who has any information regarding the event.": "Sajib",
+        "Where did the event take place?": "inside care home",
+        "When did the event happen?": "yesterday",
+        "Were there any witnesses?": "no",
+        "Please provide details of the event.": "so when resident was using stairs to go from 1st floor to 2nd floor that time she fall on the stair and broke her nose",
+        "Did the patient sustain a physical injury as a result of the event?": "yes",
+        "Please specify the size of the injury.": "small",
+        "Please specify the location of the injury.": "nose",
+        "Please provide details of any immediate action taken.": "no immadiate action",
+        "Would you like to add any vital observations?": "no",
+        "Please describe any recovery action taken and by whom?": "Luca",
+        "Please include a date and name of the person who was informed.": "Mark ",
+        "Thank you for filling out the form. Here is a summary of the event.": "thank you"
+    },
+    "analysis": {
+        "has_injury": true,
+        "likelihood": 100.0,
+        "reasoning": "The resident fell on the stairs, which is a significant fall, and broke her nose, indicating a high risk of physical injury.",
+        "injury_mentioned": true,
+        "mention_details": "broke her nose (explicit mention of injury)",
+        "classification": "accident",
+        "classification_reason": "The event is classified as an accident because the resident experienced a physical injury (broken nose) as a result of falling on the stairs, which is an unforeseen and unfortunate incident."
+    },
+    "summary": "**Title of the accident**: Fall - Broken Nose\n\n**Descriptive Summary**: \nThe incident involved a **fall** that occurred **yesterday** when the **resident** was using the **stairs** to go from the **1st floor to the 2nd floor** inside the **care home**. During this event, the **resident** fell on the **stair** and **broke her nose**. The staff member **Sajib** has information regarding the event. There were **no witnesses** to the incident. \n\n**Key Findings**: \n- The event type was a **fall**.\n- The location of the event was **inside the care home** on the **stairs** between the **1st and 2nd floor**.\n- The event occurred **yesterday**.\n- There were **no witnesses**.\n- The staff member with information is **Sajib**.\n- The **resident** sustained a physical injury, specifically a **broken nose**, which is described as **small** in size.\n- The part of the body injured was the **nose**.\n\n**Action Taken**: \n- **No immediate action** was taken.\n- **Luca** was involved in the **recovery action** taken.\n- The person informed about the event was **Mark**.",
+    "injury_questions": false,
+    "scenario_type": "accident"
+}

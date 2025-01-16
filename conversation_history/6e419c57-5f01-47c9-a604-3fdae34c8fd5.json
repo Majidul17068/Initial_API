@@ -1,0 +1,28 @@
+{
+    "responses": {
+        "Please select the type of event from the options below.": "fall",
+        "Please provide the name of the staff member who has any information regarding the event.": "sajib",
+        "Where did the event take place?": "inside care home",
+        "When did the event happen?": "it happened yesterday evening",
+        "Were there any witnesses?": "yes",
+        "Please provide details of the event.": "when the resident were walking in the garden shee fall in the ground and stumbled on a hard rock",
+        "Did the patient sustain a physical injury as a result of the event?": "no",
+        "Please provide details of any immediate action taken.": "no immediate action",
+        "Would you like to add any vital observations?": "no",
+        "Please describe any recovery action taken and by whom?": "no recovery action",
+        "Please include a date and name of the person who was informed.": "we informed resident doctor Jack",
+        "Thank you for filling out the form. Here is a summary of the event.": "thank you"
+    },
+    "analysis": {
+        "has_injury": true,
+        "likelihood": 80.0,
+        "reasoning": "The resident fell and stumbled on a hard rock, which increases the likelihood of physical injury due to the impact and potential force exerted on the body.",
+        "injury_mentioned": false,
+        "mention_details": "None found",
+        "classification": "accident",
+        "classification_reason": "Although no explicit injury is mentioned, the event involves a fall and impact with a hard object, which poses a significant risk of physical harm, thus classifying it as an accident."
+    },
+    "summary": "**Title of the accident**: Fall \n\n**Descriptive Summary**: \nThe incident involved a **fall** that occurred **yesterday evening** when the resident was walking in the **garden** of the care home. During this incident, the resident **fell** to the **ground** and **stumbled on a hard rock**. The event took place **inside the care home**, specifically in the garden area. Staff member **Sajib** has information regarding the event, and there were **witnesses** present. \n\n**Key Findings**: \n* The event type was a **fall**.\n* The location of the event was the **garden** inside the care home.\n* The time of the event was **yesterday evening**.\n* The staff member with information about the event is **Sajib**.\n* There were **witnesses** to the event.\n* The resident **fell** and **stumbled on a hard rock**.\n* **No physical injury** was sustained by the resident as a result of the event.\n* The resident's doctor, **Jack**, was informed.\n\n**Action Taken**: \n* **No immediate action** was taken following the event.\n* **No recovery action** was taken.\n* The resident's doctor, **Jack**, was informed about the event.",
+    "injury_questions": false,
+    "scenario_type": "accident"
+}

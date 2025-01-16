@@ -1,0 +1,22 @@
+{
+    "responses": {
+        "Please select the type of event from the options below.": "fall",
+        "Please provide the name of the staff member who has any information regarding the event.": "dipesh",
+        "Where did the event take place?": "inside care home",
+        "When did the event happen?": "yesterday night",
+        "Were there any witnesses?": "no witness",
+        "Please provide details of the event.": "so when the resident was walking in the garden then she fall on the ground our stuff make sure she is on her feet. After that she proceed for her room",
+        "Did the patient sustain a physical injury as a result of the event?": "Yes"
+    },
+    "analysis": {
+        "has_injury": true,
+        "likelihood": 70.0,
+        "reasoning": "The resident fell on the ground, which increases the likelihood of physical injury, especially since the details of the fall and the resident's condition after the fall are not thoroughly described.",
+        "injury_mentioned": false,
+        "mention_details": "None found",
+        "classification": "incident",
+        "classification_reason": "Although the resident fell, there is no explicit or implicit mention of an injury. The staff ensured she was back on her feet and she proceeded to her room, suggesting that the situation was managed without immediate signs of severe harm, thus it's classified as an incident rather than an accident."
+    },
+    "summary": null,
+    "scenario_type": "incident"
+}

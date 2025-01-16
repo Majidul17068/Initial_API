@@ -1,0 +1,30 @@
+{
+    "responses": {
+        "Please select the type of event from the options below.": "fall",
+        "Please provide the name of the staff member who has any information regarding the event.": "jithan",
+        "Where did the event take place?": "inside care home",
+        "When did the event happen?": "yesterday",
+        "Were there any witnesses?": "no witness",
+        "Please provide details of the event.": "so when resident was getting down using stairs that time she fall from stare and cut her forehed ",
+        "Did the patient sustain a physical injury as a result of the event?": "yes",
+        "Please specify the size of the injury.": "smalll",
+        "Please specify the location of the injury.": "forehead",
+        "Please provide details of any immediate action taken.": "no immedaite action",
+        "Would you like to add any vital observations?": "no vital observation",
+        "Please describe any recovery action taken and by whom?": "immediately sajib put some bandages and ice pack",
+        "Please include a date and name of the person who was informed.": "Luca",
+        "Thank you for filling out the form. Here is a summary of the event.": "ok"
+    },
+    "analysis": {
+        "has_injury": true,
+        "likelihood": 90.0,
+        "reasoning": "The resident fell from the stairs, which is a significant height and can cause severe injury, and also cut her forehead, indicating a high risk of physical harm.",
+        "injury_mentioned": true,
+        "mention_details": "cut, fall",
+        "classification": "accident",
+        "classification_reason": "The event is classified as an accident because the resident experienced a physical injury (cut on the forehead) as a result of falling from the stairs, which is an unforeseen and unfortunate incident."
+    },
+    "summary": "**Title of the accident**: Fall - Resident fell from stairs and cut her forehead\n\n**Descriptive Summary**: \nThe incident occurred **yesterday** at the **inside care home** when the resident was getting down using the stairs and she **fell from stairs**. During the fall, the resident **cut her forehead**. The staff member **Jithan** has information regarding the event, but there were **no witnesses**. After the fall, the resident sustained a physical injury, which was described as a **small** cut on her **forehead**.\n\n**Key Findings**: \n* **Location**: Inside care home\n* **Time**: Yesterday\n* **Individuals involved**: Resident, Staff member **Jithan**\n* **Actions**: Resident fell from stairs\n* **Medical observations**: Resident cut her **forehead**, the injury was **small**\n* **Part of the body injured**: **Forehead**\n\n**Action Taken**: \nThe staff member **Sajib** took immediate recovery action by putting **some bandages and an ice pack** on the resident's injury. However, it was initially stated that **no immediate action** was taken. \n\nNote: The report is based strictly on the provided context, and the discrepancy regarding immediate action is reflected as per the user's input.",
+    "injury_questions": false,
+    "scenario_type": "accident"
+}
