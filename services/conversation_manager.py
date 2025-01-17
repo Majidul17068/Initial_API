@@ -49,7 +49,15 @@ class ConversationManager:
         if not conversation:
             raise ValueError("Conversation not found.")
 
-        conversation["responses"][question] = response
+        # Correct grammar using GroqService
+        corrected_response = self.groq_service.check_grammar(response)
+
+        # Print debug messages
+        print(f"User Response Received: {response}")
+        print(f"Corrected Response: {corrected_response}")
+
+        # Save corrected response
+        conversation["responses"][question] = corrected_response
         self.save_conversation(conversation_id)
 
         initial_questions = [
@@ -64,18 +72,23 @@ class ConversationManager:
         if question in initial_questions:
             current_index = initial_questions.index(question)
             if current_index < len(initial_questions) - 1:
-                return initial_questions[current_index + 1], None, None
+                return {
+                    "next_question": initial_questions[current_index + 1],
+                    "analysis": None,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
 
             if question == "Please provide details of the event.":
-                analysis_result = self.groq_service.event_analysis(response)
+                analysis_result = self.groq_service.event_analysis(corrected_response)
                 conversation["analysis"] = analysis_result
                 conversation["scenario_type"] = analysis_result["classification"]
 
                 analysis_message = (
-                    "📋 **Event Classification**:\n\n"
-                    + ("🚨 Accident" if analysis_result["classification"] == "accident" else "⚡ Incident") + "\n\n"
+                    "\U0001F4CB **Event Classification**:\n\n"
+                    + ("\U0001F6A8 Accident" if analysis_result["classification"] == "accident" else "⚡ Incident") + "\n\n"
                     + f"**Reasoning**: {analysis_result['classification_reason']}\n\n"
-                    + "🏥 **Injury Risk Analysis**:\n\n"
+                    + "\U0001F3E5 **Injury Risk Analysis**:\n\n"
                     + ("⚠️ High chance of physical injury\n" if analysis_result["has_injury"] else "✓ No significant injury risk detected\n")
                     + f"**Risk Level**: {analysis_result['likelihood']}%\n\n"
                     + f"**Assessment**: {analysis_result['reasoning']}\n\n"
@@ -83,35 +96,69 @@ class ConversationManager:
 
                 self.save_conversation(conversation_id)
                 if analysis_result["has_injury"]:
-                    return "Did the patient sustain a physical injury as a result of the event?", analysis_message, None
-                return "Please provide details of any immediate action taken.", analysis_message, None
+                    return {
+                        "next_question": "Did the patient sustain a physical injury as a result of the event?",
+                        "analysis": analysis_message,
+                        "summary": None,
+                        "corrected_response": corrected_response
+                    }
+                return {
+                    "next_question": "Please provide details of any immediate action taken.",
+                    "analysis": analysis_message,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
 
         if question == "Did the patient sustain a physical injury as a result of the event?":
-            if response.lower() == "yes":
+            if corrected_response.lower() == "yes":
                 conversation["injury_questions"] = True
-                return "Please specify the size of the injury.", None, None
-            return "Please provide details of any immediate action taken.", None, None
+                return {
+                    "next_question": "Please specify the size of the injury.",
+                    "analysis": None,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
+            return {
+                "next_question": "Please provide details of any immediate action taken.",
+                "analysis": None,
+                "summary": None,
+                "corrected_response": corrected_response
+            }
 
         if conversation.get("injury_questions", False):
             if question == "Please specify the size of the injury.":
-                return "Please specify the location of the injury.", None, None
+                return {
+                    "next_question": "Please specify the location of the injury.",
+                    "analysis": None,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
             if question == "Please specify the location of the injury.":
                 conversation["injury_questions"] = False  # Reset flow
-                return "Please provide details of any immediate action taken.", None, None
+                return {
+                    "next_question": "Please provide details of any immediate action taken.",
+                    "analysis": None,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
 
         remaining_questions = [
             "Please provide details of any immediate action taken.",
             "Would you like to add any vital observations?",
             "Please describe any recovery action taken and by whom?",
             "Please include a date and name of the person who was informed.",
-            "Thank you for filling out the form. Here is a summary of the event.",
+            "Thank you for filling out the form. Here is a summary of the event."
         ]
 
         if question in remaining_questions:
             current_index = remaining_questions.index(question)
             if current_index < len(remaining_questions) - 1:
-                return remaining_questions[current_index + 1], None, None
-
+                return {
+                    "next_question": remaining_questions[current_index + 1],
+                    "analysis": None,
+                    "summary": None,
+                    "corrected_response": corrected_response
+                }
             if question == "Thank you for filling out the form. Here is a summary of the event.":
                 summary = self.groq_service.summarize_scenario(
                     responses=conversation["responses"],
@@ -122,9 +169,20 @@ class ConversationManager:
                 )
                 conversation["summary"] = summary
                 self.save_conversation(conversation_id)
-                return None, None, summary
+                return {
+                    "next_question": None,
+                    "analysis": None,
+                    "summary": summary,  # Ensure summary is passed to frontend
+                    "corrected_response": corrected_response
+                    
+                }
 
-        return None, None, None
+        return {
+            "next_question": None,
+            "analysis": None,
+            "summary": None,
+            "corrected_response": corrected_response
+        }
 
     def stop_conversation(self, conversation_id):
         """Stop a conversation and remove it from active memory."""
