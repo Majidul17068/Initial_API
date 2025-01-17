@@ -43,10 +43,16 @@ def start_conversation():
 def ask_question(conversation_id: str, user_response: UserResponse):
     """Process a user's response and return the next question, analysis, or summary."""
     try:
-        next_question, analysis_message, summary = conversation_manager.handle_question(
+        response_data = conversation_manager.handle_question(
             conversation_id, user_response.question, user_response.response
         )
-        return {"next_question": next_question, "analysis": analysis_message, "summary": summary}
+
+        return {
+            "next_question": response_data.get("next_question"),
+            "analysis": response_data.get("analysis"),
+            "summary": response_data.get("summary"),
+            "corrected_response": response_data.get("corrected_response"),  # Include corrected response
+        }
     except ValueError as ve:
         logger.error(f"Error: {ve}")
         raise HTTPException(status_code=404, detail=str(ve))
