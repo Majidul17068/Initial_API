@@ -9,38 +9,19 @@ class ConversationManager:
         self.conversations = {}
         self.groq_service = GroqService()
         
-        # Get Redis credentials from environment
+        # Get Redis URL from environment
         redis_url = os.getenv('REDIS_URL')
-        redis_host = os.getenv('REDIS_HOST')
-        redis_port = os.getenv('REDIS_PORT')
-        redis_username = os.getenv('REDIS_USERNAME')
-        redis_password = os.getenv('REDIS_PASSWORD')
-        
-        print("Redis Configuration:")
-        print(f"Host: {redis_host}")
-        print(f"Port: {redis_port}")
-        print(f"Username: {redis_username}")
+        print(f"Initializing Redis with URL: {redis_url}")
         
         try:
-            if redis_url:
-                print("Attempting to connect using REDIS_URL")
-                self.redis_client = redis.from_url(
-                    redis_url,
-                    decode_responses=True,
-                    ssl=True,
-                    ssl_cert_reqs=None
-                )
-            elif all([redis_host, redis_port, redis_username, redis_password]):
-                print("Attempting to connect using individual credentials")
-                redis_url = f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}"
-                self.redis_client = redis.from_url(
-                    redis_url,
-                    decode_responses=True,
-                    ssl=True,
-                    ssl_cert_reqs=None
-                )
-            else:
-                raise ValueError("Redis credentials not properly configured")
+            if not redis_url:
+                raise ValueError("REDIS_URL not found in environment variables")
+                
+            self.redis_client = redis.from_url(
+                redis_url,
+                decode_responses=True,
+                ssl_cert_reqs=None
+            )
             
             # Test the connection
             self.redis_client.ping()
@@ -60,7 +41,7 @@ class ConversationManager:
         try:
             cached_conversations = self.redis_client.keys('conversation:*')
             for key in cached_conversations:
-                conv_id = key.decode('utf-8').split(':')[1]
+                conv_id = key.split(':')[1]  # Removed decode('utf-8')
                 cached_data = self.redis_client.get(key)
                 if cached_data:
                     self.conversations[conv_id] = json.loads(cached_data)
