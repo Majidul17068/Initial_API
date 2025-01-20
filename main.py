@@ -5,6 +5,10 @@ from services.conversation_manager import ConversationManager
 import logging
 import os
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 conversation_manager = ConversationManager()
@@ -51,7 +55,7 @@ def ask_question(conversation_id: str, user_response: UserResponse):
             "next_question": response_data.get("next_question"),
             "analysis": response_data.get("analysis"),
             "summary": response_data.get("summary"),
-            "corrected_response": response_data.get("corrected_response"),  # Include corrected response
+            "corrected_response": response_data.get("corrected_response"),
         }
     except ValueError as ve:
         logger.error(f"Error: {ve}")
@@ -68,5 +72,5 @@ def stop_conversation(conversation_id: str):
         raise HTTPException(status_code=404, detail=str(ve))
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8080"))  # Use Render's assigned port
+    port = int(os.getenv("PORT", "8080"))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
