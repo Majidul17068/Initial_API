@@ -10,3 +10,4 @@ streamlit
 pymongo
 dnspython
 sendgrid
+redis==5.0.1  # Added for Redis support
