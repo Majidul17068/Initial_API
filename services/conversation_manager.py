@@ -9,21 +9,46 @@ class ConversationManager:
         self.conversations = {}
         self.groq_service = GroqService()
         
-        # Initialize Redis connection with SSL
+        # Get Redis credentials from environment
         redis_url = os.getenv('REDIS_URL')
+        redis_host = os.getenv('REDIS_HOST')
+        redis_port = os.getenv('REDIS_PORT')
+        redis_username = os.getenv('REDIS_USERNAME')
+        redis_password = os.getenv('REDIS_PASSWORD')
+        
+        print("Redis Configuration:")
+        print(f"Host: {redis_host}")
+        print(f"Port: {redis_port}")
+        print(f"Username: {redis_username}")
+        
         try:
-            self.redis_client = redis.from_url(
-                redis_url,
-                decode_responses=True,
-                ssl=True,
-                ssl_cert_reqs=None  # Required for TLS connection
-            )
+            if redis_url:
+                print("Attempting to connect using REDIS_URL")
+                self.redis_client = redis.from_url(
+                    redis_url,
+                    decode_responses=True,
+                    ssl=True,
+                    ssl_cert_reqs=None
+                )
+            elif all([redis_host, redis_port, redis_username, redis_password]):
+                print("Attempting to connect using individual credentials")
+                redis_url = f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}"
+                self.redis_client = redis.from_url(
+                    redis_url,
+                    decode_responses=True,
+                    ssl=True,
+                    ssl_cert_reqs=None
+                )
+            else:
+                raise ValueError("Redis credentials not properly configured")
+            
             # Test the connection
             self.redis_client.ping()
             print("Successfully connected to Redis")
             self._load_conversations_from_cache()
+            
         except Exception as e:
-            print(f"Redis connection error: {e}")
+            print(f"Redis connection error: {str(e)}")
             print("Falling back to in-memory storage only")
             self.redis_client = None
 
