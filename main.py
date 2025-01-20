@@ -4,11 +4,16 @@ from pydantic import BaseModel
 from services.conversation_manager import ConversationManager
 import logging
 import os
-import uvicorn
 from dotenv import load_dotenv
+import uvicorn
 
 # Load environment variables
 load_dotenv()
+
+# Debug print to verify environment variables
+print("Redis URL:", os.getenv('REDIS_URL'))
+print("Redis Host:", os.getenv('REDIS_HOST'))
+print("Redis Port:", os.getenv('REDIS_PORT'))
 
 app = FastAPI()
 conversation_manager = ConversationManager()
@@ -16,7 +21,7 @@ conversation_manager = ConversationManager()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust for frontend URL if needed
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,5 +77,5 @@ def stop_conversation(conversation_id: str):
         raise HTTPException(status_code=404, detail=str(ve))
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8080"))
+    port = int(os.getenv("PORT", "8000"))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
