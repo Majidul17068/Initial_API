@@ -1,16 +1,62 @@
-import os
-import json
 import uuid
+import json
+import redis
+import os
 from services.groq_service import GroqService
 
 class ConversationManager:
     def __init__(self):
         self.conversations = {}
-        self.history_dir = "./conversation_history"
         self.groq_service = GroqService()
+        
+        # Initialize Redis connection with SSL
+        redis_url = os.getenv('REDIS_URL')
+        try:
+            self.redis_client = redis.from_url(
+                redis_url,
+                decode_responses=True,
+                ssl=True,
+                ssl_cert_reqs=None  # Required for TLS connection
+            )
+            # Test the connection
+            self.redis_client.ping()
+            print("Successfully connected to Redis")
+            self._load_conversations_from_cache()
+        except Exception as e:
+            print(f"Redis connection error: {e}")
+            print("Falling back to in-memory storage only")
+            self.redis_client = None
 
-        if not os.path.exists(self.history_dir):
-            os.makedirs(self.history_dir)
+    def _load_conversations_from_cache(self):
+        """Load existing conversations from Redis cache."""
+        if not self.redis_client:
+            return
+            
+        try:
+            cached_conversations = self.redis_client.keys('conversation:*')
+            for key in cached_conversations:
+                conv_id = key.decode('utf-8').split(':')[1]
+                cached_data = self.redis_client.get(key)
+                if cached_data:
+                    self.conversations[conv_id] = json.loads(cached_data)
+        except Exception as e:
+            print(f"Error loading from cache: {e}")
+
+    def _cache_conversation(self, conversation_id):
+        """Cache conversation data in Redis."""
+        if not self.redis_client:
+            return
+            
+        try:
+            conversation = self.get_conversation(conversation_id)
+            if conversation:
+                self.redis_client.set(
+                    f'conversation:{conversation_id}',
+                    json.dumps(conversation),
+                    ex=86400  # Cache for 24 hours
+                )
+        except Exception as e:
+            print(f"Error caching conversation: {e}")
 
     def create_new_conversation(self):
         """Create a new conversation and return its ID."""
@@ -19,22 +65,14 @@ class ConversationManager:
             "responses": {},
             "analysis": None,
             "summary": None,
-            "injury_questions": False  # Track if injury-specific questions are active
+            "injury_questions": False
         }
+        self._cache_conversation(conversation_id)
         return conversation_id
 
     def get_conversation(self, conversation_id):
         """Retrieve an active conversation by its ID."""
         return self.conversations.get(conversation_id)
-
-    def save_conversation(self, conversation_id):
-        """Save a conversation to a JSON file."""
-        conversation = self.get_conversation(conversation_id)
-        if not conversation:
-            raise ValueError("Conversation not found.")
-        file_path = os.path.join(self.history_dir, f"{conversation_id}.json")
-        with open(file_path, "w") as file:
-            json.dump(conversation, file, indent=4)
 
     def start_conversation(self, conversation_id):
         """Start a conversation and return the first question."""
@@ -58,7 +96,7 @@ class ConversationManager:
 
         # Save corrected response
         conversation["responses"][question] = corrected_response
-        self.save_conversation(conversation_id)
+        self._cache_conversation(conversation_id)
 
         initial_questions = [
             "Please select the type of event from the options below.",
@@ -83,6 +121,7 @@ class ConversationManager:
                 analysis_result = self.groq_service.event_analysis(corrected_response)
                 conversation["analysis"] = analysis_result
                 conversation["scenario_type"] = analysis_result["classification"]
+                self._cache_conversation(conversation_id)
 
                 analysis_message = (
                     "\U0001F4CB **Event Classification**:\n\n"
@@ -94,7 +133,6 @@ class ConversationManager:
                     + f"**Assessment**: {analysis_result['reasoning']}\n\n"
                 )
 
-                self.save_conversation(conversation_id)
                 if analysis_result["has_injury"]:
                     return {
                         "next_question": "Did the patient sustain a physical injury as a result of the event?",
@@ -112,6 +150,7 @@ class ConversationManager:
         if question == "Did the patient sustain a physical injury as a result of the event?":
             if corrected_response.lower() == "yes":
                 conversation["injury_questions"] = True
+                self._cache_conversation(conversation_id)
                 return {
                     "next_question": "Please specify the size of the injury.",
                     "analysis": None,
@@ -134,7 +173,8 @@ class ConversationManager:
                     "corrected_response": corrected_response
                 }
             if question == "Please specify the location of the injury.":
-                conversation["injury_questions"] = False  # Reset flow
+                conversation["injury_questions"] = False
+                self._cache_conversation(conversation_id)
                 return {
                     "next_question": "Please provide details of any immediate action taken.",
                     "analysis": None,
@@ -168,13 +208,12 @@ class ConversationManager:
                     staff="Staff Name"
                 )
                 conversation["summary"] = summary
-                self.save_conversation(conversation_id)
+                self._cache_conversation(conversation_id)
                 return {
                     "next_question": None,
                     "analysis": None,
-                    "summary": summary,  # Ensure summary is passed to frontend
+                    "summary": summary,
                     "corrected_response": corrected_response
-                    
                 }
 
         return {
@@ -185,8 +224,13 @@ class ConversationManager:
         }
 
     def stop_conversation(self, conversation_id):
-        """Stop a conversation and remove it from active memory."""
+        """Stop a conversation and remove it from active memory and cache."""
         if conversation_id in self.conversations:
             del self.conversations[conversation_id]
+            if self.redis_client:
+                try:
+                    self.redis_client.delete(f'conversation:{conversation_id}')
+                except Exception as e:
+                    print(f"Error deleting from cache: {e}")
         else:
             raise ValueError("Conversation not found.")
