@@ -3,34 +3,44 @@ import json
 import redis
 import os
 from services.groq_service import GroqService
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ConversationManager:
     def __init__(self):
         self.conversations = {}
         self.groq_service = GroqService()
         
-        # Get Redis URL from environment
-        redis_url = os.getenv('REDIS_URL')
-        print(f"Initializing Redis with URL: {redis_url}")
+        # Get Redis credentials from environment
+        self.redis_url = os.getenv('REDIS_URL')
+        self.redis_host = os.getenv('REDIS_HOST')
+        self.redis_port = os.getenv('REDIS_PORT')
+        self.redis_password = os.getenv('REDIS_PASSWORD')
+        
+        logger.info("Initializing Redis connection...")
+        logger.info(f"Host: {self.redis_host}")
+        logger.info(f"Port: {self.redis_port}")
         
         try:
-            if not redis_url:
-                raise ValueError("REDIS_URL not found in environment variables")
-                
-            self.redis_client = redis.from_url(
-                redis_url,
+            # Try direct connection
+            self.redis_client = redis.Redis(
+                host=self.redis_host,
+                port=int(self.redis_port),
+                password=self.redis_password,
                 decode_responses=True,
-                ssl_cert_reqs=None
+                socket_timeout=5,
+                socket_connect_timeout=5
             )
             
-            # Test the connection
+            # Test connection
             self.redis_client.ping()
-            print("Successfully connected to Redis")
+            logger.info("Successfully connected to Redis")
             self._load_conversations_from_cache()
             
         except Exception as e:
-            print(f"Redis connection error: {str(e)}")
-            print("Falling back to in-memory storage only")
+            logger.error(f"Redis connection error: {str(e)}")
+            logger.warning("Falling back to in-memory storage only")
             self.redis_client = None
 
     def _load_conversations_from_cache(self):
@@ -41,12 +51,13 @@ class ConversationManager:
         try:
             cached_conversations = self.redis_client.keys('conversation:*')
             for key in cached_conversations:
-                conv_id = key.split(':')[1]  # Removed decode('utf-8')
+                conv_id = key.split(':')[1]
                 cached_data = self.redis_client.get(key)
                 if cached_data:
                     self.conversations[conv_id] = json.loads(cached_data)
+                    logger.info(f"Loaded conversation {conv_id} from cache")
         except Exception as e:
-            print(f"Error loading from cache: {e}")
+            logger.error(f"Error loading from cache: {e}")
 
     def _cache_conversation(self, conversation_id):
         """Cache conversation data in Redis."""
@@ -61,8 +72,9 @@ class ConversationManager:
                     json.dumps(conversation),
                     ex=86400  # Cache for 24 hours
                 )
+                logger.info(f"Cached conversation: {conversation_id}")
         except Exception as e:
-            print(f"Error caching conversation: {e}")
+            logger.error(f"Error caching conversation: {e}")
 
     def create_new_conversation(self):
         """Create a new conversation and return its ID."""
@@ -74,11 +86,19 @@ class ConversationManager:
             "injury_questions": False
         }
         self._cache_conversation(conversation_id)
+        logger.info(f"Created new conversation: {conversation_id}")
         return conversation_id
 
     def get_conversation(self, conversation_id):
         """Retrieve an active conversation by its ID."""
-        return self.conversations.get(conversation_id)
+        conversation = self.conversations.get(conversation_id)
+        if not conversation and self.redis_client:
+            # Try to get from Redis if not in memory
+            cached_data = self.redis_client.get(f'conversation:{conversation_id}')
+            if cached_data:
+                conversation = json.loads(cached_data)
+                self.conversations[conversation_id] = conversation
+        return conversation
 
     def start_conversation(self, conversation_id):
         """Start a conversation and return the first question."""
@@ -93,17 +113,16 @@ class ConversationManager:
         if not conversation:
             raise ValueError("Conversation not found.")
 
-        # Correct grammar using GroqService
+        # Get corrected response using GroqService
         corrected_response = self.groq_service.check_grammar(response)
+        logger.info(f"Original response: {response}")
+        logger.info(f"Corrected response: {corrected_response}")
 
-        # Print debug messages
-        print(f"User Response Received: {response}")
-        print(f"Corrected Response: {corrected_response}")
-
-        # Save corrected response
+        # Save response in conversation history
         conversation["responses"][question] = corrected_response
         self._cache_conversation(conversation_id)
 
+        # Define question flow
         initial_questions = [
             "Please select the type of event from the options below.",
             "Please provide the name of the staff member who has any information regarding the event.",
@@ -236,7 +255,8 @@ class ConversationManager:
             if self.redis_client:
                 try:
                     self.redis_client.delete(f'conversation:{conversation_id}')
+                    logger.info(f"Deleted conversation {conversation_id} from cache")
                 except Exception as e:
-                    print(f"Error deleting from cache: {e}")
+                    logger.error(f"Error deleting from cache: {e}")
         else:
             raise ValueError("Conversation not found.")
