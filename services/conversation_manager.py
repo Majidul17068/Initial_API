@@ -9,29 +9,21 @@ class ConversationManager:
         self.conversations = {}
         self.groq_service = GroqService()
         
-        # Get Redis URL from environment
+        # Initialize Redis connection with SSL
         redis_url = os.getenv('REDIS_URL')
-        print(f"Initializing Redis with URL: {redis_url}")
-        
         try:
-            if not redis_url:
-                raise ValueError("REDIS_URL not found in environment variables")
-                
-            # Updated Redis connection configuration
             self.redis_client = redis.from_url(
                 redis_url,
                 decode_responses=True,
-                connection_class=redis.SSLConnection,
-                ssl_cert_reqs=None
+                ssl=True,
+                ssl_cert_reqs=None  # Required for TLS connection
             )
-            
             # Test the connection
             self.redis_client.ping()
             print("Successfully connected to Redis")
             self._load_conversations_from_cache()
-            
         except Exception as e:
-            print(f"Redis connection error: {str(e)}")
+            print(f"Redis connection error: {e}")
             print("Falling back to in-memory storage only")
             self.redis_client = None
 
