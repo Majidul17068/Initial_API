@@ -9,14 +9,12 @@ class ConversationManager:
         self.conversations = {}
         self.groq_service = GroqService()
         
-        # Initialize Redis connection with SSL
+        # Initialize Redis connection
         redis_url = os.getenv('REDIS_URL')
         try:
             self.redis_client = redis.from_url(
                 redis_url,
-                decode_responses=True,
-                ssl=True,
-                ssl_cert_reqs=None  # Required for TLS connection
+                decode_responses=True
             )
             # Test the connection
             self.redis_client.ping()
@@ -35,7 +33,7 @@ class ConversationManager:
         try:
             cached_conversations = self.redis_client.keys('conversation:*')
             for key in cached_conversations:
-                conv_id = key.decode('utf-8').split(':')[1]
+                conv_id = key.split(':')[1]  # Removed decode('utf-8') since decode_responses=True
                 cached_data = self.redis_client.get(key)
                 if cached_data:
                     self.conversations[conv_id] = json.loads(cached_data)
